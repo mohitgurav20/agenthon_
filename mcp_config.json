@@ -7,8 +7,8 @@
         "@supabase/mcp-server-supabase@latest"
       ],
       "env": {
-        "SUPABASE_URL": "<YOUR_SUPABASE_URL>",
-        "SUPABASE_SERVICE_ROLE_KEY": "<YOUR_SUPABASE_SERVICE_ROLE_KEY>"
+        "SUPABASE_URL": "https://igmpeciekhaczkagnqin.supabase.co",
+        "SUPABASE_SERVICE_ROLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnbXBlY2lla2hhY3prYWducWluIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTczMDM5MywiZXhwIjoyMDk1MzA2MzkzfQ.bRXMutwvHtlUGvVtsOjeHWac-pJD3N3jlQqFj1OYtdk"
       }
     },
     "mem0": {
@@ -17,7 +17,7 @@
         "mem0-mcp-server"
       ],
       "env": {
-        "MEM0_API_KEY": "<YOUR_MEM0_API_KEY>",
+        "MEM0_API_KEY": "m0-qxdOsYpM3CKfinA2V8IEGZV5KDZiodc5navFLOAp",
         "MEM0_DEFAULT_USER_ID": "agent-zero-user"
       }
     }
