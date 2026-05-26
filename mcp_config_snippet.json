@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "tavily": {
+      "command": "uvx",
+      "args": [
+        "tavily-mcp"
+      ],
+      "env": {
+        "TAVILY_API_KEY": "REPLACE_WITH_YOUR_TAVILY_KEY"
+      }
+    }
+  }
+}
