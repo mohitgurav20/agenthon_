@@ -27,6 +27,7 @@ async function storeMemory(text, userId) {
         return result;
     } catch (error) {
         console.error("Error storing memory:", error);
+        throw error;
     }
 }
 

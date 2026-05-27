@@ -30,7 +30,10 @@ async function ingestDocument(content, metadata = {}) {
 
         console.log("Generating embedding for content...");
         // Use gemini-embedding-2
-        const model = genAI.getGenerativeModel({ model: "gemini-embedding-2" });
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-embedding-2",
+            systemInstruction: "This model is used exclusively for generating text embeddings."
+        });
         const result = await model.embedContent(content);
         const embedding = result.embedding.values;
 

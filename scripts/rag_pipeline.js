@@ -11,13 +11,14 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 /**
- * Searches the Supabase documents table using RAG / Vector similarity
+ * Searches the Supabase documents table using RAG / Vector similarity or Hybrid Search
  * @param {string} query - The search query
  * @param {number} matchThreshold - Minimum similarity threshold (e.g., 0.5)
  * @param {number} matchCount - Max number of chunks to return
+ * @param {string} searchType - Search strategy: 'semantic' (default) or 'hybrid'
  * @returns {Promise<Array>} List of relevant document chunks
  */
-async function searchKnowledgeBase(query, matchThreshold = 0.5, matchCount = 5) {
+async function searchKnowledgeBase(query, matchThreshold = 0.5, matchCount = 5, searchType = 'hybrid') {
     if (!query) {
         console.error("Missing query for RAG search.");
         return [];
@@ -32,17 +33,49 @@ async function searchKnowledgeBase(query, matchThreshold = 0.5, matchCount = 5) 
 
         console.log(`Generating embedding for query: "${query}"...`);
         // Use gemini-embedding-2
-        const model = genAI.getGenerativeModel({ model: "gemini-embedding-2" });
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-embedding-2",
+            systemInstruction: "This model is used exclusively for generating text embeddings."
+        });
         const result = await model.embedContent(query);
         const embedding = result.embedding.values;
 
-        console.log("Searching Supabase pgvector...");
-        // Call the match_documents RPC function defined in schema.sql
-        const { data, error } = await supabase.rpc('match_documents', {
-            query_embedding: embedding,
-            match_threshold: matchThreshold,
-            match_count: matchCount
-        });
+        console.log(`Searching Supabase via [${searchType.toUpperCase()}] search strategy...`);
+        
+        let data = [];
+        let error = null;
+
+        if (searchType === 'hybrid') {
+            // Call the hybrid search RPC function matching the schema
+            const rpcResult = await supabase.rpc('match_documents_hybrid', {
+                query_text: query,
+                query_embedding: embedding,
+                match_threshold: matchThreshold,
+                match_count: matchCount
+            });
+            data = rpcResult.data;
+            error = rpcResult.error;
+
+            if (error) {
+                console.warn("⚠️  match_documents_hybrid RPC failed or not deployed. Falling back to standard semantic search...");
+                const fallbackResult = await supabase.rpc('match_documents', {
+                    query_embedding: embedding,
+                    match_threshold: matchThreshold,
+                    match_count: matchCount
+                });
+                data = fallbackResult.data;
+                error = fallbackResult.error;
+            }
+        } else {
+            // Standard semantic similarity search RPC
+            const rpcResult = await supabase.rpc('match_documents', {
+                query_embedding: embedding,
+                match_threshold: matchThreshold,
+                match_count: matchCount
+            });
+            data = rpcResult.data;
+            error = rpcResult.error;
+        }
 
         if (error) {
             throw error;
@@ -60,8 +93,9 @@ async function searchKnowledgeBase(query, matchThreshold = 0.5, matchCount = 5) 
 if (require.main === module) {
     const args = process.argv.slice(2);
     const query = args[0] || "What is the capital of France?";
+    const type = args[1] || "hybrid";
     
-    searchKnowledgeBase(query).then(results => {
+    searchKnowledgeBase(query, 0.3, 5, type).then(results => {
         console.log(JSON.stringify(results, null, 2));
     });
 }
