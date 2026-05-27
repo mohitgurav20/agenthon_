@@ -423,6 +423,17 @@ export default function DashboardPage() {
         actionLogs: data.actionLogs
       });
 
+      // Dynamically load crawled jobs from Tavily search
+      if (data.scrapedJobs && data.scrapedJobs.length > 0) {
+        setScrapedJobs(data.scrapedJobs);
+      }
+
+      // Dynamically update live ATS score meter
+      if (data.atsMetrics) {
+        setAtsMetrics(data.atsMetrics);
+        setActiveTab('ats');
+      }
+
       if (data.audit) {
         setSessionAudit(data.audit);
       }

@@ -148,6 +148,8 @@ async function processInput({ userInput, sessionId, userId = 'agent-zero-user' }
     },
     agent: classification.agent,
     complexity: classification.complexity,
+    scrapedJobs: agentResult.scrapedJobs || undefined,
+    atsMetrics: agentResult.atsMetrics || undefined,
     sources: agentResult.sources || {},
     actionLogs: agentResult.actionLogs || undefined,
     performance: {

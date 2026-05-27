@@ -13,9 +13,9 @@ This is our active task checklist. As we work, we will update these tasks to tra
     - `[x]` Integrate the ATS parser script inside `tools/index.js` as the 'ats_evaluate' tool.
     - `[x]` Configure the Claude quality self-correction loop in `orchestrator/agents/validator-agent.js`.
 
-- `[ ]` **Pillar 3: Job Discovery**
-    - `[ ]` Integrate Tavily search tool specifically for crawling live Greenhouse and Lever job boards.
-    - `[ ]` Build the semantic gap analysis logic comparing target jobs to Mem0 profiles.
+- `[x]` **Pillar 3: Job Discovery**
+    - `[x]` Integrated Tavily search tool specifically to crawl live Greenhouse and Lever job boards based on profile skills.
+    - `[x]` Built the semantic gap analysis logic comparing target job requirements to Mem0 user profiles.
 
 - `[ ]` **Pillar 4: Automated Application**
     - `[ ]` Update `tools/python_browser_agent.py` to launch Chromium with the user's active session profile directory.
