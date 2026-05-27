@@ -1,6 +1,13 @@
 require('dotenv').config();
 const express = require('express');
-const { storeMemory, retrieveMemory, buildContext } = require('./index');
+const { 
+    storeMemory, 
+    retrieveMemory, 
+    buildContext, 
+    createLettaAgent, 
+    sendLettaMessage, 
+    getLettaAgentMemory 
+} = require('./index');
 
 const app = express();
 app.use(express.json());
@@ -55,10 +62,61 @@ app.post('/memory/context', async (req, res) => {
     }
 });
 
+// Endpoint to create a Letta agent
+app.post('/memory/letta/agent', async (req, res) => {
+    try {
+        const { name, systemPrompt } = req.body;
+        if (!name || !systemPrompt) {
+            return res.status(400).json({ error: "Missing 'name' or 'systemPrompt' in request body." });
+        }
+        
+        const result = await createLettaAgent(name, systemPrompt);
+        res.json({ success: true, result });
+    } catch (error) {
+        console.error("Error in /memory/letta/agent:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// Endpoint to send message to a Letta agent
+app.post('/memory/letta/message', async (req, res) => {
+    try {
+        const { agentId, messageText } = req.body;
+        if (!agentId || !messageText) {
+            return res.status(400).json({ error: "Missing 'agentId' or 'messageText' in request body." });
+        }
+        
+        const result = await sendLettaMessage(agentId, messageText);
+        res.json({ success: true, result });
+    } catch (error) {
+        console.error("Error in /memory/letta/message:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// Endpoint to get Letta agent memory
+app.get('/memory/letta/agent/:id/memory', async (req, res) => {
+    try {
+        const agentId = req.params.id;
+        if (!agentId) {
+            return res.status(400).json({ error: "Missing agent 'id' parameter." });
+        }
+        
+        const result = await getLettaAgentMemory(agentId);
+        res.json({ success: true, result });
+    } catch (error) {
+        console.error("Error in /memory/letta/agent/:id/memory:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`Memory API server running on port ${PORT}`);
     console.log(`Endpoints available:`);
     console.log(`- POST /memory/store`);
     console.log(`- POST /memory/retrieve`);
     console.log(`- POST /memory/context`);
+    console.log(`- POST /memory/letta/agent`);
+    console.log(`- POST /memory/letta/message`);
+    console.log(`- GET  /memory/letta/agent/:id/memory`);
 });
