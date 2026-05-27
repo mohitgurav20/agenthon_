@@ -11,7 +11,7 @@
 
 import { logger, task, wait } from "@trigger.dev/sdk/v3";
 // Import the tools registry we built in Day 2
-// const tools = require('../tools');
+const tools = require('../tools/index.js');
 
 export const longRunningAgentTask = task({
   id: "long-running-agent-task",
@@ -27,18 +27,20 @@ export const longRunningAgentTask = task({
       
       logger.info(`Executing tool: ${payload.taskType}`);
       
-      // Simulate heavy work for the skeleton
-      await wait.for({ seconds: 2 });
+      // Simulate heavy work for the skeleton if no specific taskType is passed
+      if (!payload.taskType) {
+        await wait.for({ seconds: 2 });
+        return { success: true, message: "Heavy mock task completed" };
+      }
       
-      // const result = await tools.executeTool(payload.taskType, payload.params);
-      const mockResult = { success: true, message: "Heavy task completed" };
+      const result = await tools.executeTool(payload.taskType, payload.params);
 
       // Example integration point for Person C's logic:
       // 3. Save result to Supabase agent_outputs table here
       
-      logger.info("Task completed successfully, saving to DB");
+      logger.info("Task completed successfully", { toolName: payload.taskType });
 
-      return mockResult;
+      return result;
     } catch (error: any) {
       logger.error("Agent task failed", { error: error.message });
       throw error;

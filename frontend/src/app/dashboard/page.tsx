@@ -1,6 +1,46 @@
+'use client';
+
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import { CopilotChat } from '@copilotkit/react-ui';
+import { createClient } from '@/utils/supabase/client';
+
+type AgentOutputEvent = Record<string, unknown> & {
+  timestamp?: string | number;
+  localTimestamp?: number;
+  output?: string;
+  input?: string;
+};
 
 export default function DashboardPage() {
+  const [liveEvents, setLiveEvents] = useState<AgentOutputEvent[]>([]);
+  const supabase = createClient();
+
+  useEffect(() => {
+    // Subscribe to realtime changes on agent_outputs table
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'agent_outputs',
+        },
+        (payload) => {
+          setLiveEvents((prev) => [
+            { ...(payload.new as Record<string, unknown>), localTimestamp: Date.now() }, 
+            ...prev
+          ].slice(0, 10)); // Keep last 10
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase]);
+
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       {/* Header */}
@@ -26,7 +66,7 @@ export default function DashboardPage() {
       <main className="flex-1 flex overflow-hidden relative z-0">
         
         {/* Left Sidebar: Memory & Tools */}
-        <aside className="w-80 border-r border-border glass-panel flex flex-col">
+        <aside className="w-80 border-r border-border glass-panel flex flex-col z-10">
           <div className="p-4 border-b border-border">
             <h2 className="text-xs font-mono tracking-widest text-gray-400 mb-4">ACTIVE TOOLS (PERSON B)</h2>
             <div className="space-y-2">
@@ -41,43 +81,45 @@ export default function DashboardPage() {
           
           <div className="p-4 flex-1 overflow-y-auto">
             <h2 className="text-xs font-mono tracking-widest text-gray-400 mb-4">LIVE MEMORY (PERSON C)</h2>
-            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-sm text-gray-300">
-              <span className="text-xs font-mono text-primary block mb-1">just now</span>
-              Waiting for Mem0 / Supabase Realtime connection...
-            </div>
+            {liveEvents.length === 0 ? (
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-sm text-gray-300">
+                <span className="text-xs font-mono text-primary block mb-1">waiting</span>
+                Listening to Supabase Realtime on &apos;agent_outputs&apos;...
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {liveEvents.map((ev, i) => (
+                  <div key={i} className="p-3 rounded-lg bg-primary/10 border border-primary/30 text-sm text-gray-200">
+                    <span className="text-xs font-mono text-primary block mb-1">
+                      {new Date(ev.timestamp || ev.localTimestamp || 0).toLocaleTimeString()}
+                    </span>
+                    {ev.output || ev.input || "New event received"}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </aside>
 
         {/* Center: CopilotKit / Agent Chat Area */}
         <section className="flex-1 flex flex-col bg-background/50 relative">
-          <div className="absolute inset-0 pointer-events-none opacity-5" style={{
+          <div className="absolute inset-0 pointer-events-none opacity-5 z-0" style={{
             backgroundImage: 'radial-gradient(circle at center, #7c3aed 1px, transparent 1px)',
             backgroundSize: '24px 24px'
           }} />
           
-          <div className="flex-1 overflow-y-auto p-8 flex flex-col items-center justify-center text-center">
-            <div className="w-16 h-16 rounded-2xl bg-surface border border-border flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(124,58,237,0.15)]">
-              <span className="text-2xl">🤖</span>
-            </div>
-            <h2 className="text-xl font-semibold mb-2">Orchestrator Agent Ready</h2>
-            <p className="text-sm text-gray-400 max-w-md">
-              (Person A integration point)<br/>
-              Drop the CopilotKit <code>&lt;CopilotPopup /&gt;</code> or custom chat interface here. Tools are registered and waiting.
-            </p>
-          </div>
-
-          {/* Input Area (Mock) */}
-          <div className="p-6 border-t border-border glass-panel">
-            <div className="max-w-3xl mx-auto relative">
-              <input 
-                type="text" 
-                placeholder="Initialize agent command..." 
-                className="w-full bg-surface border border-border rounded-xl px-4 py-4 text-sm focus:outline-none focus:border-primary/50 transition-colors"
-                disabled
-              />
-              <button className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors" disabled>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-              </button>
+          <div className="flex-1 overflow-hidden flex flex-col z-10 p-6">
+            <div className="bg-surface/90 backdrop-blur-md border border-border rounded-2xl overflow-hidden h-full shadow-[0_0_30px_rgba(124,58,237,0.15)] flex flex-col">
+              {/* CopilotKit Chat UI Wrapper to make it look native */}
+              <div className="flex-1 relative copilot-custom-wrapper">
+                <CopilotChat
+                  instructions="You are Agent Zero, an advanced Orchestrator Agent. Provide concise, professional responses. You have access to Supabase memory, Tavily search, and browser automation tools."
+                  labels={{
+                    title: "Orchestrator Agent",
+                    initial: "Initializing sequence complete. All systems online. Awaiting command...",
+                  }}
+                />
+              </div>
             </div>
           </div>
         </section>

@@ -2,7 +2,7 @@
  * ============================================================
  * AGENT ZERO — TOOLS REGISTRY
  * ============================================================
- * Person B owns this folder. All 10 tools are exported here
+ * Person B owns this folder. All tools are exported here
  * so the Orchestrator/Action agents can load them dynamically.
  * ============================================================
  */
@@ -17,6 +17,7 @@ const { generateReport } = require('./report-generator');
 const { makePhoneCall } = require('./phone-caller');
 const { analyzeData } = require('./data-analytics');
 const { textToSpeech } = require('./voice-interface');
+const { executeSkyvernTask } = require('./skyvern-agent');
 
 // Registry mapping tool names to their execution functions
 const toolRegistry = {
@@ -30,7 +31,8 @@ const toolRegistry = {
   'generate_report': generateReport,
   'make_phone_call': makePhoneCall,
   'analyze_data': analyzeData,
-  'text_to_speech': textToSpeech
+  'text_to_speech': textToSpeech,
+  'skyvern_fill_form': executeSkyvernTask
 };
 
 /**
@@ -89,5 +91,7 @@ module.exports = {
   generateReport,
   makePhoneCall,
   analyzeData,
-  textToSpeech
+  textToSpeech,
+  executeSkyvernTask
 };
+
