@@ -117,6 +117,23 @@ app.get('/memory/letta/agent/:id/memory', async (req, res) => {
     }
 });
 
+// Endpoint to conduct a dynamic step in the ResumeVault Interview
+app.post('/memory/interview', async (req, res) => {
+    try {
+        const { messages, userId } = req.body;
+        if (!messages || !Array.isArray(messages) || !userId) {
+            return res.status(400).json({ error: "Missing 'messages' (Array) or 'userId' (String) in request body." });
+        }
+        
+        const { conductInterviewStep } = require('../scripts/profile_builder');
+        const result = await conductInterviewStep(messages, userId);
+        res.json({ success: true, ...result });
+    } catch (error) {
+        console.error("Error in /memory/interview:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 // Endpoint to trigger semantic memory deduplication
 app.post('/memory/deduplicate', async (req, res) => {
     try {
@@ -200,6 +217,7 @@ app.listen(PORT, () => {
     console.log(`- POST /memory/letta/agent`);
     console.log(`- POST /memory/letta/message`);
     console.log(`- GET  /memory/letta/agent/:id/memory`);
+    console.log(`- POST /memory/interview`);
     console.log(`- POST /memory/deduplicate`);
     console.log(`- POST /memory/hybrid-search`);
     console.log(`- POST /memory/reset`);

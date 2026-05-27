@@ -22,7 +22,7 @@ async function retrieveMemory(query, userId, cluster) {
         
         const filters = { user_id: userId };
         if (cluster) {
-            filters.cluster = cluster;
+            filters.metadata = { cluster: cluster };
         }
 
         // Mem0 search automatically handles embeddings and semantic search
