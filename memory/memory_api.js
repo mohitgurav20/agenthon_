@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const { createClient } = require('@supabase/supabase-js');
 const { 
     storeMemory, 
     retrieveMemory, 
@@ -8,6 +9,12 @@ const {
     sendLettaMessage, 
     getLettaAgentMemory 
 } = require('./index');
+const { searchKnowledgeBase } = require('../scripts/rag_pipeline');
+
+// Initialize local Supabase Client
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const app = express();
 app.use(express.json());
@@ -110,6 +117,80 @@ app.get('/memory/letta/agent/:id/memory', async (req, res) => {
     }
 });
 
+// Endpoint to trigger semantic memory deduplication
+app.post('/memory/deduplicate', async (req, res) => {
+    try {
+        const { userId } = req.body;
+        if (!userId) {
+            return res.status(400).json({ error: "Missing 'userId' in request body." });
+        }
+        
+        const { deduplicateUserMemories } = require('../scripts/deduplicate_memories');
+        const result = await deduplicateUserMemories(userId);
+        res.json({ success: true, result });
+    } catch (error) {
+        console.error("Error in /memory/deduplicate:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// Endpoint to query RAG using Reciprocal Rank Fusion Hybrid search
+app.post('/memory/hybrid-search', async (req, res) => {
+    try {
+        const { query, matchThreshold, matchCount } = req.body;
+        if (!query) {
+            return res.status(400).json({ error: "Missing 'query' in request body." });
+        }
+        
+        const results = await searchKnowledgeBase(query, matchThreshold || 0.3, matchCount || 5, 'hybrid');
+        res.json({ success: true, results });
+    } catch (error) {
+        console.error("Error in /memory/hybrid-search:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// Endpoint to purge and reset all database tables between hackathon runs
+app.post('/memory/reset', async (req, res) => {
+    try {
+        console.log("🧹 [API Reset] Purging database tables...");
+        
+        // Delete items. To secure safety across Supabase policies, we check not-null ids
+        const d1 = await supabase.from('tool_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        const d2 = await supabase.from('agent_outputs').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        const d3 = await supabase.from('documents').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        
+        if (d1.error || d2.error || d3.error) {
+            console.warn("⚠️  Some tables failed to purge or had no rows:", {
+                tool_logs: d1.error?.message || 'OK',
+                agent_outputs: d2.error?.message || 'OK',
+                documents: d3.error?.message || 'OK'
+            });
+        }
+
+        const { userId } = req.body;
+        if (userId) {
+            console.log(`Resetting Mem0 user memories for ID: ${userId}...`);
+            const isOnline = process.env.MEM0_API_KEY && !process.env.MEM0_API_KEY.includes('your_');
+            if (isOnline) {
+                const { MemoryClient } = require('mem0ai');
+                const client = new MemoryClient({ apiKey: process.env.MEM0_API_KEY });
+                await client.deleteAll({ userId });
+            } else {
+                console.log("ℹ️  [API Reset] Mem0 API key is not configured. Simulating memory purge.");
+            }
+        }
+
+        res.json({ 
+            success: true, 
+            message: "Database tables and conversational contexts cleared successfully." 
+        });
+    } catch (error) {
+        console.log("Error in /memory/reset:", error.message, error.stack);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`Memory API server running on port ${PORT}`);
     console.log(`Endpoints available:`);
@@ -119,4 +200,7 @@ app.listen(PORT, () => {
     console.log(`- POST /memory/letta/agent`);
     console.log(`- POST /memory/letta/message`);
     console.log(`- GET  /memory/letta/agent/:id/memory`);
+    console.log(`- POST /memory/deduplicate`);
+    console.log(`- POST /memory/hybrid-search`);
+    console.log(`- POST /memory/reset`);
 });

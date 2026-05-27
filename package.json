@@ -4,6 +4,7 @@
     "@supabase/supabase-js": "^2.106.2",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "mem0ai": "^3.0.3"
+    "mem0ai": "^3.0.3",
+    "pg": "^8.21.0"
   }
 }

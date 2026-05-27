@@ -76,3 +76,61 @@ AS $$
     ORDER BY documents.embedding <=> query_embedding
     LIMIT match_count;
 $$;
+
+-- Create Full-Text Search GIN index for hybrid BM25 searches
+CREATE INDEX IF NOT EXISTS documents_fts_idx ON documents USING GIN (to_tsvector('english', content));
+
+-- Create RRF Hybrid Search SQL similarity search function
+CREATE OR REPLACE FUNCTION match_documents_hybrid (
+    query_text TEXT,
+    query_embedding VECTOR(3072),
+    match_threshold FLOAT,
+    match_count INT,
+    rrf_k INT DEFAULT 60
+)
+RETURNS TABLE (
+    id UUID,
+    content TEXT,
+    metadata JSONB,
+    similarity FLOAT,
+    rrf_score FLOAT
+)
+LANGUAGE plpgsql STABLE
+AS $$
+BEGIN
+    RETURN QUERY
+    WITH semantic_search AS (
+        SELECT 
+            d.id,
+            d.content,
+            d.metadata,
+            (1 - (d.embedding <=> query_embedding)) AS similarity,
+            ROW_NUMBER() OVER (ORDER BY d.embedding <=> query_embedding) AS rank
+        FROM documents d
+        WHERE 1 - (d.embedding <=> query_embedding) > match_threshold
+    ),
+    keyword_search AS (
+        SELECT 
+            d.id,
+            d.content,
+            d.metadata,
+            ts_rank_cd(to_tsvector('english', d.content), plainto_tsquery('english', query_text)) AS keyword_score,
+            ROW_NUMBER() OVER (ORDER BY ts_rank_cd(to_tsvector('english', d.content), plainto_tsquery('english', query_text)) DESC) AS rank
+        FROM documents d
+        WHERE to_tsvector('english', d.content) @@ plainto_tsquery('english', query_text)
+    )
+    SELECT
+        COALESCE(s.id, k.id) AS id,
+        COALESCE(s.content, k.content) AS content,
+        COALESCE(s.metadata, k.metadata) AS metadata,
+        COALESCE(s.similarity, 0.0)::FLOAT AS similarity,
+        (
+            COALESCE(1.0 / (rrf_k + s.rank), 0.0) +
+            COALESCE(1.0 / (rrf_k + k.rank), 0.0)
+        )::FLOAT AS rrf_score
+    FROM semantic_search s
+    FULL OUTER JOIN keyword_search k ON s.id = k.id
+    ORDER BY rrf_score DESC
+    LIMIT match_count;
+END;
+$$;
