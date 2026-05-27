@@ -8,7 +8,7 @@
  */
 
 const { searchWeb, searchJobBoards } = require('./tavily-search');
-const { scrapeWeb } = require('./web-scraper');
+const { scrapeWeb, scrapeLinkedInJob } = require('./web-scraper');
 const { sendEmail, sendDirectApplication } = require('./email-sender');
 const { sendWhatsApp } = require('./whatsapp-notifier');
 const { processDocument, searchDocuments } = require('./document-reader');
@@ -16,7 +16,7 @@ const { analyzeImage } = require('./image-analyzer');
 const { generateReport } = require('./report-generator');
 const { makePhoneCall } = require('./phone-caller');
 const { analyzeData } = require('./data-analytics');
-const { textToSpeech } = require('./voice-interface');
+const { textToSpeech, triggerRecruiterFeedback } = require('./voice-interface');
 const { executeSkyvernTask } = require('./skyvern-agent');
 const { executeAtsParser } = require('./managed_agent_tool');
 
@@ -25,6 +25,7 @@ const toolRegistry = {
   'web_search': searchWeb,
   'job_crawler': searchJobBoards,
   'web_scrape': scrapeWeb,
+  'scrape_linkedin': scrapeLinkedInJob,
   'send_email': sendEmail,
   'send_direct_application': sendDirectApplication,
   'send_whatsapp': sendWhatsApp,
@@ -35,6 +36,7 @@ const toolRegistry = {
   'make_phone_call': makePhoneCall,
   'analyze_data': analyzeData,
   'text_to_speech': textToSpeech,
+  'recruiter_feedback': triggerRecruiterFeedback,
   'skyvern_fill_form': executeSkyvernTask,
   'ats_parser': executeAtsParser
 };
@@ -145,6 +147,7 @@ module.exports = {
   searchWeb,
   searchJobBoards,
   scrapeWeb,
+  scrapeLinkedInJob,
   sendEmail,
   sendDirectApplication,
   sendWhatsApp,
@@ -155,6 +158,7 @@ module.exports = {
   makePhoneCall,
   analyzeData,
   textToSpeech,
+  triggerRecruiterFeedback,
   executeSkyvernTask,
   executeAtsParser
 };

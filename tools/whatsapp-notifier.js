@@ -60,4 +60,26 @@ async function sendWhatsAppNotification({ to, title, body, urgency = 'normal' })
   return await sendWhatsApp({ to, message: formattedMessage });
 }
 
-module.exports = { sendWhatsApp, sendWhatsAppNotification };
+// Send Application Status Alert
+async function sendApplicationStatus({ to, score, status, company }) {
+  const title = `Application Update: ${company}`;
+  let body = `Your ATS match score was *${score}/100*. `;
+  let urgency = 'normal';
+
+  if (status === 'submitted') {
+    body += `\n✅ Application successfully submitted.`;
+    urgency = 'low';
+  } else if (status === 'interview') {
+    body += `\n🎉 CONGRATULATIONS! They want to interview you. Check your email immediately!`;
+    urgency = 'high';
+  } else if (status === 'safety_pause') {
+    body += `\n🛑 SECURITY HALT. A CAPTCHA was detected while applying. Please open your desktop to solve it.`;
+    urgency = 'high';
+  } else {
+    body += `\nStatus: ${status}`;
+  }
+
+  return await sendWhatsAppNotification({ to, title, body, urgency });
+}
+
+module.exports = { sendWhatsApp, sendWhatsAppNotification, sendApplicationStatus };

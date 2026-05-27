@@ -88,4 +88,19 @@ async function speechToText(audioFilePath) {
   };
 }
 
-module.exports = { textToSpeech, speechToText };
+// Trigger a dynamic recruiter feedback voice alert
+async function triggerRecruiterFeedback({ candidateName = "Candidate", jobTitle, status = "submitted" }) {
+  let script = "";
+  if (status === "submitted") {
+    script = `Hello ${candidateName}. Great news! We have successfully submitted your application for the ${jobTitle} position. I'll let you know when they respond.`;
+  } else if (status === "interview") {
+    script = `Hi ${candidateName}! They loved your profile for the ${jobTitle} role and want to schedule an interview! Check your email for details.`;
+  } else {
+    script = `Hello ${candidateName}. Your application for ${jobTitle} has a new update. Please check your dashboard.`;
+  }
+  
+  console.log(`[VoiceInterface] Generating recruiter feedback for status: ${status}`);
+  return await textToSpeech(script);
+}
+
+module.exports = { textToSpeech, speechToText, triggerRecruiterFeedback };
