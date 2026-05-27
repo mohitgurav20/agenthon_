@@ -32,7 +32,10 @@ async function searchKnowledgeBase(query, matchThreshold = 0.5, matchCount = 5) 
 
         console.log(`Generating embedding for query: "${query}"...`);
         // Use gemini-embedding-2
-        const model = genAI.getGenerativeModel({ model: "gemini-embedding-2" });
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-embedding-2",
+            systemInstruction: "This model is used exclusively for generating text embeddings."
+        });
         const result = await model.embedContent(query);
         const embedding = result.embedding.values;
 
