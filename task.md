@@ -17,10 +17,10 @@ This is our active task checklist. As we work, we will update these tasks to tra
     - `[x]` Integrated Tavily search tool specifically to crawl live Greenhouse and Lever job boards based on profile skills.
     - `[x]` Built the semantic gap analysis logic comparing target job requirements to Mem0 user profiles.
 
-- `[ ]` **Pillar 4: Automated Application**
-    - `[ ]` Update `tools/python_browser_agent.py` to launch Chromium with the user's active session profile directory.
-    - `[ ]` Add form field selectors for auto-filling Greenhouse and Lever boards.
-    - `[ ]` Implement dynamic cover letter and custom question answering within the browser script.
+- `[x]` **Pillar 4: Automated Application**
+    - `[x]` Updated tools/python_browser_agent.py and browser-agent-launcher.js to mount Chrome session directories.
+    - `[x]` Added form selectors and autofilling logic for Greenhouse and Lever boards.
+    - `[x]` Implemented dynamic cover letter and on-the-fly custom essay answering inside the browser script.
 
 - `[x]` **Pillar 5: Next-Gen Dashboard UI**
     - `[x]` Redesign the dashboard page (`frontend/src/app/dashboard/page.tsx`) with premium obsidian styling.

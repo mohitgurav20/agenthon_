@@ -20,6 +20,7 @@ const { textToSpeech } = require('./voice-interface');
 const { runRemoteSandbox } = require('./managed_agent_tool');
 const { executeSkyvernTask } = require('./skyvern-agent');
 const { evaluateResume } = require('./ats-analyzer');
+const { launchBrowserAgent } = require('./browser-agent-launcher');
 
 // Registry mapping tool names to their execution functions
 const toolRegistry = {
@@ -36,7 +37,8 @@ const toolRegistry = {
   'text_to_speech': textToSpeech,
   'run_remote_sandbox': runRemoteSandbox,
   'skyvern_fill_form': executeSkyvernTask,
-  'ats_evaluate': evaluateResume
+  'ats_evaluate': evaluateResume,
+  'run_browser_task': launchBrowserAgent
 };
 
 // --- Enterprise Hardening: Token Bucket Rate Limiter ---
@@ -155,6 +157,7 @@ module.exports = {
   textToSpeech,
   runRemoteSandbox,
   executeSkyvernTask,
-  evaluateResume
+  evaluateResume,
+  launchBrowserAgent
 };
 
