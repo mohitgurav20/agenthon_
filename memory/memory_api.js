@@ -19,7 +19,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 const app = express();
 app.use(express.json());
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.MEMORY_PORT || 3001;
 
 // Endpoint to store memory in Mem0
 app.post('/memory/store', async (req, res) => {

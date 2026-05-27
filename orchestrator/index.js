@@ -20,6 +20,7 @@
 const { classifyIntent } = require('./router');
 const researchAgent = require('./agents/research-agent');
 const actionAgent = require('./agents/action-agent');
+const profileAgent = require('./agents/profile-agent');
 const { validateWithRetry } = require('./agents/validator-agent');
 const langfuse = require('./langfuse');
 const { getSessionSummary } = require('./services/auditor');
@@ -81,8 +82,9 @@ async function processInput({ userInput, sessionId, userId = 'agent-zero-user' }
     try {
       if (classification.agent === 'action') {
         return await actionAgent.run(modifiedInput, sessionId, userId, classification.complexity);
+      } else if (classification.agent === 'profile') {
+        return await profileAgent.run(modifiedInput, sessionId, userId, classification.complexity);
       } else {
-        // Default to research for both 'research' and 'memory' intents
         return await researchAgent.run(modifiedInput, sessionId, userId, classification.complexity);
       }
     } catch (err) {
@@ -94,6 +96,8 @@ async function processInput({ userInput, sessionId, userId = 'agent-zero-user' }
         try {
           if (classification.agent === 'action') {
             return await actionAgent.run(modifiedInput, sessionId, userId, classification.complexity);
+          } else if (classification.agent === 'profile') {
+            return await profileAgent.run(modifiedInput, sessionId, userId, classification.complexity);
           } else {
             return await researchAgent.run(modifiedInput, sessionId, userId, classification.complexity);
           }
