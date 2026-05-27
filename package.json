@@ -9,7 +9,9 @@
     "memory": "node memory/memory_api.js",
     "start:all": "concurrently \"npm run memory\" \"npm run tools\" \"npm run orchestrator\"",
     "dev": "npm run start:all",
-    "test": "node test_orchestrator.js"
+    "test": "node test_orchestrator.js",
+    "test:tools": "node test_tools.js",
+    "test:e2e": "jest tests/tools.test.js"
   },
   "keywords": [
     "ai",
@@ -38,5 +40,8 @@
     "twilio": "^5.4.0",
     "uuid": "^10.0.0",
     "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
   }
 }

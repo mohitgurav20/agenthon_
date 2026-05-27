@@ -81,6 +81,18 @@ app.post('/api/tools/tts', async (req, res) => {
   res.json(result);
 });
 
+// 8. Skyvern Webhook
+app.post('/api/webhooks/skyvern', (req, res) => {
+  const payload = req.body;
+  console.log(`[Webhook] Received Skyvern status update for Task ID: ${payload.task_id}`);
+  
+  // Here we would typically save the status to Supabase or alert the Agent via MCP
+  // For the hackathon, we simply acknowledge it to prevent Skyvern from retrying.
+  console.log(`[Webhook] Status: ${payload.status}`);
+  
+  res.status(200).send('OK');
+});
+
 // Run server
 app.listen(PORT, () => {
   console.log(`\n⚡ AGENT ZERO Server running on http://localhost:${PORT}`);
