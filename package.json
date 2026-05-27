@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js",
-    "test": "node test/test-tools.js"
+    "test": "node test_tools.js",
+    "test:e2e": "jest tests/tools.test.js"
   },
   "keywords": [
     "ai",
@@ -31,5 +32,8 @@
     "pdf-parse": "^1.1.1",
     "twilio": "^5.3.0",
     "uuid": "^10.0.0"
+  },
+  "devDependencies": {
+    "jest": "^30.4.2"
   }
 }

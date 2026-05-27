@@ -35,6 +35,39 @@ const toolRegistry = {
   'skyvern_fill_form': executeSkyvernTask
 };
 
+// --- Enterprise Hardening: Token Bucket Rate Limiter ---
+const RATE_LIMIT_MAX = 50;
+const REFILL_RATE_MS = 2000; // 1 token every 2 seconds
+let currentTokens = RATE_LIMIT_MAX;
+let lastRefill = Date.now();
+
+function checkRateLimit() {
+  const now = Date.now();
+  const timePassed = now - lastRefill;
+  const tokensToAdd = Math.floor(timePassed / REFILL_RATE_MS);
+  if (tokensToAdd > 0) {
+    currentTokens = Math.min(RATE_LIMIT_MAX, currentTokens + tokensToAdd);
+    lastRefill = now;
+  }
+  if (currentTokens <= 0) return false;
+  currentTokens--;
+  return true;
+}
+
+// --- Enterprise Hardening: 15s Timeout Wrapper ---
+const withTimeout = (promise, ms) => {
+  let timeoutId;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`Tool execution timed out after ${ms}ms`));
+    }, ms);
+  });
+  return Promise.race([
+    promise,
+    timeoutPromise
+  ]).finally(() => clearTimeout(timeoutId));
+};
+
 /**
  * Execute a tool by name dynamically
  * @param {string} toolName - Name of the tool in registry
@@ -47,14 +80,38 @@ async function executeTool(toolName, params) {
     throw new Error(`Tool not found: ${toolName}`);
   }
 
+  // 1. Rate Limiting Check
+  if (!checkRateLimit()) {
+    console.warn(`[RateLimiter] Execution blocked for ${toolName}. Out of tokens.`);
+    return { success: false, error: 'Rate limit exceeded. Please wait.' };
+  }
+
   console.log(`[ToolRunner] Executing ${toolName}...`);
   const startTime = Date.now();
   
   try {
+    // 2. Universal Mocks Env Switch
+    if (process.env.USE_MOCKS === 'true') {
+      console.log(`[ToolRunner] MOCK MODE ACTIVE: Returning simulated result for ${toolName}`);
+      return {
+        success: true,
+        toolName,
+        latencyMs: 150,
+        result: {
+          mocked: true,
+          message: `Successfully mocked execution of ${toolName}`,
+          params_received: params
+        }
+      };
+    }
+
     // If params is an object, expand it into arguments, otherwise pass directly
-    const result = await (typeof params === 'object' && !Array.isArray(params) 
+    const executionPromise = (typeof params === 'object' && !Array.isArray(params))
       ? tool(params) 
-      : tool(params));
+      : tool(params);
+      
+    // 3. 15s Timeouts on execution
+    const result = await withTimeout(executionPromise, 15000);
       
     const latencyMs = Date.now() - startTime;
     console.log(`[ToolRunner] ${toolName} completed in ${latencyMs}ms`);
