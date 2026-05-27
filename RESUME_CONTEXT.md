@@ -1,60 +1,60 @@
-# ⚡ AGENT ZERO - PERSON C RESUME CONTEXT HANDBOOK
+# ⚡ AGENT ZERO - HACKATHON CONTEXT HANDBOOK
 
-If you are a future AI model resuming this workspace, **read this file first**. It outlines the exact state of the project and how to proceed immediately with Day 3 tasks.
+If you are a future AI model resuming this workspace, **read this handbook first**. It outlines the exact state of our codebase and the plan to build **ResumeVault AI — The Autonomous Job-Applying Agent**.
 
 ---
 
 ## 📅 PROJECT STATE: Day 1 & Day 2 (100% Completed & E2E Verified)
 
-All Day 1 and Day 2 tasks for **Person C (Memory & Data)** are fully functional, verified with live API keys, and integrated.
-
-### 🛠️ What We Accomplished (History & Key Fixes)
+All Day 1 and Day 2 foundation tasks are fully functional, verified with live API keys, and integrated in the repository:
 
 1. **Supabase URL & DNS Typo Solved:**
-   - Typo in previous session's summary (`igmpeciekhackzkagnqin` with an extra `k`) was corrected. The real URL is `https://igmpeciekhaczkagnqin.supabase.co`.
-   - Configured and updated `.env` and `mcp_config.json`.
+   - Correct URL configured is: `https://igmpeciekhaczkagnqin.supabase.co`.
+   - All `.env` and `mcp_config.json` parameters are verified.
 
 2. **Supabase Database Schema Upgraded to 3072 Dimensions:**
    - The developer's Gemini API key is valid. The embedding model is `gemini-embedding-2`, which produces **3072-dimensional vector embeddings** (not 768).
-   - We updated the `documents` table column to `VECTOR(3072)` and re-created the `match_documents` SQL similarity search function in the Supabase Dashboard. 
-   - SQL schema modifications are saved in [supabase/schema.sql](file:///c:/Users/Mohit%20Gurav/OneDrive/Desktop/28%20hackthon/agenthon_/supabase/schema.sql).
+   - SQL schema modifications are saved in [supabase/schema.sql](file:///c:/Users/shrey/OneDrive/Desktop/agentathonhackathon/agenthon_/supabase/schema.sql).
 
 3. **Mem0 SDK Search Query Patched:**
    - The modern `mem0ai` client no longer supports top-level `user_id` in `search()`. 
-   - We patched [scripts/retrieve_memory.js](file:///c:/Users/Mohit%20Gurav/OneDrive/Desktop/28%20hackthon/agenthon_/scripts/retrieve_memory.js) to query using `{ filters: { user_id: userId } }` and correctly return the array `results.results`.
+   - We patched the retrieval scripts to query using `{ filters: { user_id: userId } }`.
 
 4. **Robust E2E Validation Tests Passed:**
-   - **Persistence Test:** Running `node scripts/test_persistence.js` stores a fact for a specific user, resets connection context, and successfully retrieves it semantically over a different session.
-   - **RAG Ingestion & Similarity Search:** Running `node scripts/ingest_documents.js` and `node scripts/rag_pipeline.js` successfully inserts and retrieves 3072-dimensional documents using cosine similarity.
-   - **Parallel Context Construction:** Running `node scripts/build_context.js` successfully retrieves conversational memory (Mem0) and database RAG (Supabase) in parallel to construct a unified prompt context.
+   - **Persistence Test (`test_persistence.js`)**: stores a fact for a specific user, resets connection context, and successfully retrieves it semantically.
+   - **RAG Ingestion (`ingest_documents.js` & `rag_pipeline.js`)**: successfully inserts and retrieves 3072-dimensional documents using cosine similarity.
+   - **Parallel Context Construction (`build_context.js`)**: successfully retrieves conversational memory (Mem0) and database RAG (Supabase) in parallel to construct a unified context.
 
 5. **Express API Server Verification:**
-   - [memory/memory_api.js](file:///c:/Users/Mohit%20Gurav/OneDrive/Desktop/28%20hackthon/agenthon_/memory/memory_api.js) exposes endpoints on port 3001: `/memory/store`, `/memory/retrieve`, `/memory/context`.
-   - Verified that all endpoints work perfectly over HTTP `POST` requests.
+   - `memory/memory_api.js` exposes endpoints on port 3001: `/memory/store`, `/memory/retrieve`, `/memory/context`.
 
 ---
 
-## 🔮 NEXT UP: Day 3 Person C Tasks
+## 🔮 HACKATHON MISSION: ResumeVault AI (Autonomous Job-Applying Agent)
 
-Your goal is to implement **Letta (formerly MemGPT) Integration** to give the agent stateful, persistent memory blocks that endure across all sessions.
+We have officially locked in the final project: **ResumeVault AI — The Autonomous Job-Applying Agent**. This is our 3-member war plan to dominate the hackathon.
 
-### Step-by-Step Execution Plan for Day 3:
+### 💎 Key Innovative Features We Are Building:
+*   **One-Click GitHub Ingestion:** Pasting a GitHub URL autonomously scrapes the user's coding history and populates their Mem0 profile.
+*   **Isolated Sandbox ATS Parser:** A Python script in the secure sandbox container parses the generated markdown resume, scores keyword density, and guides a Claude quality self-correction loop.
+*   **Semantic Gap Analysis:** Job matching discovers missing skills and displays dynamic "10-minute micro-learning cards".
+*   **Autonomous Chromium Auto-Apply:** Utilizes `browser-use` (`python_browser_agent.py`) mounted with the user's active session profile to autofill and submit real Greenhouse/Lever application pages.
 
-1. **Add Letta Env Parameter:**
-   - Add `LETTA_SERVER_URL=http://localhost:8283` to [.env](file:///c:/Users/Mohit%20Gurav/OneDrive/Desktop/28%20hackthon/agenthon_/.env).
+---
 
-2. **Implement Letta REST Client:**
-   - Create `scripts/letta_integration.js` using Node fetch to handle:
-     - `createLettaAgent(name, systemPrompt)` -> `POST /v1/agents`
-     - `sendLettaMessage(agentId, messageText)` -> `POST /v1/agents/{agent_id}/messages`
-     - `getLettaAgentMemory(agentId)` -> `GET /v1/agents/{agent_id}/memory`
+## 📋 DIRECTORY OF ASSETS
 
-3. **Expose Letta via Express API:**
-   - Register routes inside [memory/memory_api.js](file:///c:/Users/Mohit%20Gurav/OneDrive/Desktop/28%20hackthon/agenthon_/memory/memory_api.js):
-     - `POST /memory/letta/agent`
-     - `POST /memory/letta/message`
-     - `GET /memory/letta/agent/:id/memory`
+*   **HTML War Plan & Checklist:** [RESUMEVAULT_WAR_PLAN.html](file:///c:/Users/shrey/OneDrive/Desktop/agentathonhackathon/RESUMEVAULT_WAR_PLAN.html) (Located in workspace root, print-optimized for PDF).
+*   **Implementation Plan:** [implementation_plan.md](file:///c:/Users/shrey/OneDrive/Desktop/agentathonhackathon/agenthon_/implementation_plan.md) (Located in repo root).
+*   **Execution Checklist:** [task.md](file:///c:/Users/shrey/OneDrive/Desktop/agentathonhackathon/agenthon_/task.md) (Located in repo root).
 
-4. **Add Simulation / Local Running Guide:**
-   - Provide a CLI test inside `letta_integration.js` that falls back to mock responses if the local server isn't running.
-   - Give instructions to run the local server using `pip install letta` and `letta run`.
+---
+
+## 🏁 IMMEDIATELY NEXT STEPS FOR DAY 3 HACKATHON INVOCATION
+
+When you resume this session, immediately execute these tasks strictly in your respective branches:
+
+1.  **Pillar 1 (Person C):** Expose GitHub ingestion routes, refine Mem0 profile timelines, and ensure pgvector RRF searches pull relevant experience.
+2.  **Pillar 2 (Person A & B):** Configure career system prompts in `orchestrator/config/agents.json`. Write the `ats_parser.py` script inside the secure sandbox container.
+3.  **Pillar 4 (Person B):** Connect `python_browser_agent.py` to auto-fill details and submit.
+4.  **Pillar 5 (Person A):** Update `frontend/src/app/dashboard/page.tsx` with a live ATS score meter and dynamic browser automation logs.
