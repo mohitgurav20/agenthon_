@@ -2,6 +2,15 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { CopilotChat } from '@copilotkit/react-ui';
+import { createClient } from '@/utils/supabase/client';
+
+type AgentOutputEvent = Record<string, unknown> & {
+  timestamp?: string | number;
+  localTimestamp?: number;
+  output?: string;
+  input?: string;
+};
 
 interface Message {
   role: 'user' | 'assistant';
@@ -61,6 +70,38 @@ export default function DashboardPage() {
   const [sandboxInput, setSandboxInput] = useState('print("Hello from Google Cloud sandbox!")');
   const [sandboxLogs, setSandboxLogs] = useState<string[]>([]);
   const [sandboxActive, setSandboxActive] = useState(false);
+
+  // Chat Mode
+  const [chatMode, setChatMode] = useState<'custom' | 'copilot'>('custom');
+
+  // Supabase Real-time live memory events (Person C)
+  const [liveEvents, setLiveEvents] = useState<AgentOutputEvent[]>([]);
+  const supabase = createClient();
+
+  useEffect(() => {
+    // Subscribe to realtime changes on agent_outputs table
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'agent_outputs',
+        },
+        (payload) => {
+          setLiveEvents((prev) => [
+            { ...(payload.new as Record<string, unknown>), localTimestamp: Date.now() }, 
+            ...prev
+          ].slice(0, 10)); // Keep last 10
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase]);
 
   const testA2a = async () => {
     const id = Math.floor(Math.random() * 1000);
@@ -249,10 +290,11 @@ export default function DashboardPage() {
       {/* Main Layout */}
       <main className="flex-1 flex overflow-hidden relative z-0">
         
-        {/* Left Sidebar: System Info & Active Tools */}
-        <aside className="w-80 border-r border-border glass-panel flex flex-col p-4 overflow-y-auto shrink-0 select-none">
+        {/* Left Sidebar: System Info, Active Tools & Memory */}
+        <aside className="w-80 border-r border-border glass-panel flex flex-col p-4 overflow-y-auto shrink-0 select-none z-10">
+          {/* Active Agents */}
           <div className="mb-6">
-            <h2 className="text-xs font-mono tracking-widest text-gray-400 mb-3 uppercase">Agent Registry</h2>
+            <h2 className="text-xs font-mono tracking-widest text-gray-400 mb-3 uppercase">Active Agents</h2>
             <div className="space-y-2">
               <div className="flex items-center justify-between p-2.5 rounded-xl bg-surface/50 border border-border">
                 <span className="text-sm font-medium">🧠 Router (Llama-3.1)</span>
@@ -273,8 +315,9 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          {/* Active Tools List (Person B) */}
           <div className="mb-6">
-            <h2 className="text-xs font-mono tracking-widest text-gray-400 mb-3 uppercase">Person B Tools</h2>
+            <h2 className="text-xs font-mono tracking-widest text-gray-400 mb-3 uppercase">Registered Tools</h2>
             <div className="grid grid-cols-2 gap-2">
               {['Search', 'Scraper', 'Email', 'WhatsApp', 'Phone Call', 'Analytics', 'TTS', 'Vision', 'Sandbox', 'RAG'].map(tool => (
                 <div key={tool} className="flex items-center gap-2 p-2 rounded-lg bg-surface/30 border border-border/60">
@@ -285,20 +328,43 @@ export default function DashboardPage() {
             </div>
           </div>
           
-          <div className="flex-1">
+          {/* Static Memory Context (Person C) */}
+          <div className="mb-6">
             <h2 className="text-xs font-mono tracking-widest text-gray-400 mb-3 uppercase">Memory Context</h2>
             <div className="p-3.5 rounded-xl bg-primary/5 border border-primary/20 text-xs text-gray-300 space-y-2 leading-relaxed">
               <span className="text-xs font-mono text-primary block border-b border-primary/10 pb-1">Mem0 Live Recall</span>
               {latestMetrics.sources?.memoriesUsed ? (
                 <div>
-                  💡 Recalled <strong className="text-secondary">{latestMetrics.sources.memoriesUsed}</strong> historical facts from Mem0 user profile to personalize reasoning.
+                  💡 Recalled <strong className="text-secondary">{latestMetrics.sources.memoriesUsed}</strong> historical facts from Mem0 user profile.
                 </div>
               ) : (
                 <div className="text-gray-500 italic">
-                  No memories queried yet. Memories persist automatically across sessions.
+                  No memories queried yet. Memories persist automatically.
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Real-time Live Memory Events (Person C) */}
+          <div className="flex-1 border-t border-border/60 pt-4">
+            <h2 className="text-xs font-mono tracking-widest text-gray-400 mb-3 uppercase">Live Memory Logs</h2>
+            {liveEvents.length === 0 ? (
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-xs text-gray-300">
+                <span className="text-[10px] font-mono text-primary block mb-1">waiting</span>
+                Listening to Supabase Realtime changes...
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-60 overflow-y-auto">
+                {liveEvents.map((ev, i) => (
+                  <div key={i} className="p-2.5 rounded-xl bg-primary/10 border border-primary/30 text-[11px] text-gray-200">
+                    <span className="text-[9px] font-mono text-primary block mb-1">
+                      {new Date(ev.timestamp || ev.localTimestamp || 0).toLocaleTimeString()}
+                    </span>
+                    {ev.output || ev.input || "New event received"}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </aside>
 
@@ -308,130 +374,176 @@ export default function DashboardPage() {
             backgroundImage: 'radial-gradient(circle at center, #7c3aed 1px, transparent 1px)',
             backgroundSize: '24px 24px'
           }} />
-          
-          {/* Chat Messages */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
-            {messages.map((msg, i) => (
-              <div 
-                key={i} 
-                className={`flex gap-4 max-w-4xl ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'}`}
+
+          {/* Chat Mode Toggle Header */}
+          <div className="h-12 border-b border-border bg-surface/20 flex items-center justify-between px-6 shrink-0 z-10 select-none">
+            <span className="text-xs font-mono text-gray-400">CHAT RUNTIME:</span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setChatMode('custom')}
+                className={`px-3 py-1 rounded-lg text-xs font-mono transition-all border ${
+                  chatMode === 'custom'
+                    ? 'bg-primary/20 border-primary/40 text-primary font-bold'
+                    : 'bg-surface/30 border-border text-gray-500 hover:text-gray-300'
+                }`}
               >
-                {/* Avatar */}
-                <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center text-sm border ${
-                  msg.role === 'user' 
-                    ? 'bg-secondary/20 border-secondary/40 text-secondary' 
-                    : 'bg-primary/20 border-primary/40 text-primary'
-                }`}>
-                  {msg.role === 'user' ? '👤' : '🤖'}
-                </div>
-
-                {/* Message Body */}
-                <div className={`p-4 rounded-xl border leading-relaxed text-sm ${
-                  msg.role === 'user'
-                    ? 'bg-secondary/5 border-secondary/20 max-w-lg'
-                    : 'glass-panel border-border/80 max-w-2xl'
-                }`}>
-                  {msg.role === 'assistant' && (
-                    <div className="flex items-center justify-between border-b border-border/40 pb-2 mb-2">
-                      <span className="text-xs font-mono uppercase text-gray-400">
-                        Agent: <strong className="text-primary">{msg.agent || 'orchestrator'}</strong>
-                      </span>
-                      {msg.confidence !== undefined && (
-                        <span className={`text-xs px-2 py-0.5 rounded font-mono ${
-                          msg.confidence >= 80 ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
-                          msg.confidence >= 60 ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20' :
-                          'bg-red-500/10 text-red-400 border border-red-500/20'
-                        }`}>
-                          Confidence: {msg.confidence}%
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  
-                  <div className="prose prose-invert max-w-none whitespace-pre-wrap">
-                    {msg.content}
-                  </div>
-
-                  {/* Sources info in response */}
-                  {msg.sources && (msg.sources.memoriesUsed > 0 || msg.sources.ragDocsUsed > 0 || msg.sources.webResultsUsed > 0) && (
-                    <div className="mt-4 pt-2 border-t border-border/30 flex flex-wrap gap-2">
-                      {msg.sources.memoriesUsed > 0 && (
-                        <span className="text-[10px] font-mono bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded">
-                          🧠 Mem0: {msg.sources.memoriesUsed}
-                        </span>
-                      )}
-                      {msg.sources.ragDocsUsed > 0 && (
-                        <span className="text-[10px] font-mono bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded">
-                          📁 Supabase RAG: {msg.sources.ragDocsUsed}
-                        </span>
-                      )}
-                      {msg.sources.webResultsUsed > 0 && (
-                        <span className="text-[10px] font-mono bg-cyan-500/10 text-cyan-400 px-2 py-0.5 rounded">
-                          🌐 Tavily Search: {msg.sources.webResultsUsed}
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Action logs details in response */}
-                  {msg.actionLogs && msg.actionLogs.length > 0 && (
-                    <div className="mt-4 pt-3 border-t border-border/30 space-y-2">
-                      <span className="text-xs font-mono text-gray-400 block">EXECUTED ACTIONS:</span>
-                      {msg.actionLogs.map((log, index) => (
-                        <div key={index} className="p-2 rounded bg-surface/50 border border-border text-xs flex justify-between items-center">
-                          <div>
-                            <span className="font-mono text-secondary font-bold">{log.toolName}</span>
-                            <span className="text-gray-400 ml-2">({log.explanation})</span>
-                          </div>
-                          <span className={log.success ? 'text-green-400' : 'text-red-400'}>
-                            {log.success ? '✅ Success' : '❌ Failed'}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-
-            {/* Thinking / Loading indicator */}
-            {loading && (
-              <div className="flex gap-4 max-w-4xl mr-auto">
-                <div className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center text-sm border bg-primary/20 border-primary/40 text-primary animate-pulse">
-                  🤖
-                </div>
-                <div className="p-4 rounded-xl border glass-panel border-border/80 max-w-2xl min-w-[300px]">
-                  <div className="flex items-center gap-3">
-                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                    <span className="text-sm font-mono text-gray-400 animate-pulse">{currentStep}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div ref={chatEndRef} />
-          </div>
-
-          {/* Input Area */}
-          <div className="p-6 border-t border-border glass-panel shrink-0">
-            <form onSubmit={handleSubmit} className="max-w-3xl mx-auto relative flex gap-2">
-              <input 
-                type="text" 
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                placeholder="Ask Agent Zero to answer or perform actions..." 
-                className="flex-1 bg-surface border border-border rounded-xl px-4 py-4 text-sm focus:outline-none focus:border-primary/50 transition-colors"
-                disabled={loading}
-              />
-              <button 
-                type="submit" 
-                className="p-4 rounded-xl bg-primary/20 text-primary hover:bg-primary/30 border border-primary/30 transition-colors shrink-0 disabled:opacity-50"
-                disabled={loading}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                ⚡ Agent Zero (Llama/Gemini)
               </button>
-            </form>
+              <button
+                onClick={() => setChatMode('copilot')}
+                className={`px-3 py-1 rounded-lg text-xs font-mono transition-all border ${
+                  chatMode === 'copilot'
+                    ? 'bg-secondary/20 border-secondary/40 text-secondary font-bold'
+                    : 'bg-surface/30 border-border text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                🤖 CopilotKit (GPT-4o)
+              </button>
+            </div>
           </div>
+          
+          {chatMode === 'custom' ? (
+            <>
+              {/* Chat Messages */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {messages.map((msg, i) => (
+                  <div 
+                    key={i} 
+                    className={`flex gap-4 max-w-4xl ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'}`}
+                  >
+                    {/* Avatar */}
+                    <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center text-sm border ${
+                      msg.role === 'user' 
+                        ? 'bg-secondary/20 border-secondary/40 text-secondary' 
+                        : 'bg-primary/20 border-primary/40 text-primary'
+                    }`}>
+                      {msg.role === 'user' ? '👤' : '🤖'}
+                    </div>
+
+                    {/* Message Body */}
+                    <div className={`p-4 rounded-xl border leading-relaxed text-sm ${
+                      msg.role === 'user'
+                        ? 'bg-secondary/5 border-secondary/20 max-w-lg'
+                        : 'glass-panel border-border/80 max-w-2xl'
+                    }`}>
+                      {msg.role === 'assistant' && (
+                        <div className="flex items-center justify-between border-b border-border/40 pb-2 mb-2">
+                          <span className="text-xs font-mono uppercase text-gray-400">
+                            Agent: <strong className="text-primary">{msg.agent || 'orchestrator'}</strong>
+                          </span>
+                          {msg.confidence !== undefined && (
+                            <span className={`text-xs px-2 py-0.5 rounded font-mono ${
+                              msg.confidence >= 80 ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
+                              msg.confidence >= 60 ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20' :
+                              'bg-red-500/10 text-red-400 border border-red-500/20'
+                            }`}>
+                              Confidence: {msg.confidence}%
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      
+                      <div className="prose prose-invert max-w-none whitespace-pre-wrap">
+                        {msg.content}
+                      </div>
+
+                      {/* Sources info in response */}
+                      {msg.sources && (msg.sources.memoriesUsed > 0 || msg.sources.ragDocsUsed > 0 || msg.sources.webResultsUsed > 0) && (
+                        <div className="mt-4 pt-2 border-t border-border/30 flex flex-wrap gap-2">
+                          {msg.sources.memoriesUsed > 0 && (
+                            <span className="text-[10px] font-mono bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded">
+                              🧠 Mem0: {msg.sources.memoriesUsed}
+                            </span>
+                          )}
+                          {msg.sources.ragDocsUsed > 0 && (
+                            <span className="text-[10px] font-mono bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded">
+                              📁 Supabase RAG: {msg.sources.ragDocsUsed}
+                            </span>
+                          )}
+                          {msg.sources.webResultsUsed > 0 && (
+                            <span className="text-[10px] font-mono bg-cyan-500/10 text-cyan-400 px-2 py-0.5 rounded">
+                              🌐 Tavily Search: {msg.sources.webResultsUsed}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Action logs details in response */}
+                      {msg.actionLogs && msg.actionLogs.length > 0 && (
+                        <div className="mt-4 pt-3 border-t border-border/30 space-y-2">
+                          <span className="text-xs font-mono text-gray-400 block">EXECUTED ACTIONS:</span>
+                          {msg.actionLogs.map((log, index) => (
+                            <div key={index} className="p-2 rounded bg-surface/50 border border-border text-xs flex justify-between items-center">
+                              <div>
+                                <span className="font-mono text-secondary font-bold">{log.toolName}</span>
+                                <span className="text-gray-400 ml-2">({log.explanation})</span>
+                              </div>
+                              <span className={log.success ? 'text-green-400' : 'text-red-400'}>
+                                {log.success ? '✅ Success' : '❌ Failed'}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Thinking / Loading indicator */}
+                {loading && (
+                  <div className="flex gap-4 max-w-4xl mr-auto">
+                    <div className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center text-sm border bg-primary/20 border-primary/40 text-primary animate-pulse">
+                      🤖
+                    </div>
+                    <div className="p-4 rounded-xl border glass-panel border-border/80 max-w-2xl min-w-[300px]">
+                      <div className="flex items-center gap-3">
+                        <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                        <span className="text-sm font-mono text-gray-400 animate-pulse">{currentStep}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* Input Area */}
+              <div className="p-6 border-t border-border glass-panel shrink-0">
+                <form onSubmit={handleSubmit} className="max-w-3xl mx-auto relative flex gap-2">
+                  <input 
+                    type="text" 
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    placeholder="Ask Agent Zero to answer or perform actions..." 
+                    className="flex-1 bg-surface border border-border rounded-xl px-4 py-4 text-sm focus:outline-none focus:border-primary/50 transition-colors"
+                    disabled={loading}
+                  />
+                  <button 
+                    type="submit" 
+                    className="p-4 rounded-xl bg-primary/20 text-primary hover:bg-primary/30 border border-primary/30 transition-colors shrink-0 disabled:opacity-50"
+                    disabled={loading}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                  </button>
+                </form>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 overflow-hidden flex flex-col z-10 p-6">
+              <div className="bg-surface/90 backdrop-blur-md border border-border rounded-2xl overflow-hidden h-full shadow-[0_0_30px_rgba(124,58,237,0.15)] flex flex-col">
+                {/* CopilotKit Chat UI Wrapper */}
+                <div className="flex-1 relative copilot-custom-wrapper">
+                  <CopilotChat
+                    instructions="You are Agent Zero, an advanced Orchestrator Agent. Provide concise, professional responses. You have access to Supabase memory, Tavily search, and browser automation tools."
+                    labels={{
+                      title: "Orchestrator Agent",
+                      initial: "Initializing sequence complete. All systems online. Awaiting command...",
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </section>
 
         {/* Right Sidebar: Observability, Metrics & Advanced Console */}
@@ -463,7 +575,7 @@ export default function DashboardPage() {
           <div className="flex-1 overflow-y-auto p-4">
             {activeTab === 'metrics' ? (
               <>
-                {/* Original Observability Panel */}
+                {/* Observability Panel */}
                 <div className="mb-6">
                   <h2 className="text-xs font-mono tracking-widest text-gray-400 mb-3 uppercase">Observability</h2>
                   <Link
@@ -542,7 +654,7 @@ export default function DashboardPage() {
               </>
             ) : (
               <>
-                {/* ── A2A Protocol Console ── */}
+                {/* A2A Protocol Console */}
                 <div className="mb-6">
                   <h2 className="text-xs font-mono tracking-widest text-gray-400 mb-3 uppercase flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
@@ -610,7 +722,7 @@ export default function DashboardPage() {
                   )}
                 </div>
 
-                {/* ── Remote Sandbox Terminal ── */}
+                {/* Remote Sandbox Terminal */}
                 <div className="border-t border-border/60 pt-4">
                   <h2 className="text-xs font-mono tracking-widest text-gray-400 mb-3 uppercase flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />

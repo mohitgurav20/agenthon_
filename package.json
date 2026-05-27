@@ -11,9 +11,18 @@
     "dev": "npm run start:all",
     "test": "node test_orchestrator.js"
   },
+  "keywords": [
+    "ai",
+    "agents",
+    "hackathon",
+    "multi-agent"
+  ],
+  "author": "Agent Zero Team",
+  "license": "MIT",
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.106.2",
+    "@trigger.dev/sdk": "^3.3.17",
     "axios": "^1.7.7",
     "concurrently": "^9.1.0",
     "cors": "^2.8.5",
@@ -30,4 +39,3 @@
     "uuid": "^10.0.0"
   }
 }
-
