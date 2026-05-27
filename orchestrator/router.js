@@ -3,13 +3,14 @@
  * AGENT ZERO — MULTI-MODEL ROUTER
  * ============================================================
  * Routes tasks to the optimal LLM based on task type.
- * - Groq (Llama 3.1 70B): Ultra-fast routing decisions, 800 tok/sec
- * - Gemini 1.5 Pro: Deep reasoning, complex analysis
- * - Gemini 1.5 Flash: Quick summaries, web search digestion
+ * Supports dynamic runtime LLM switching per agent.
+ * Automatically logs token usage and costs to the Auditor service.
  * ============================================================
  */
 
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const agentsConfig = require('./config/agents.json');
+const { logUsage } = require('./services/auditor');
 
 // Model configurations
 const MODELS = {
@@ -43,6 +44,23 @@ const MODELS = {
   }
 };
 
+// Dynamic in-memory routing table for LLM Switcher UI
+let dynamicModels = {
+  router: 'fast',       // default to fast (groq-llama)
+  research: 'flash',    // default to flash (gemini-flash)
+  action: 'deep',       // default to deep (gemini-pro)
+  validator: 'validation' // default to validation (claude-validation)
+};
+
+function getActiveModels() {
+  return dynamicModels;
+}
+
+function setActiveModels(newModels) {
+  dynamicModels = { ...dynamicModels, ...newModels };
+  console.log('[Router] Dynamic model mapping updated:', dynamicModels);
+}
+
 // Initialize Gemini client
 let genAI = null;
 function getGeminiClient() {
@@ -55,7 +73,7 @@ function getGeminiClient() {
 /**
  * Call Groq API for fast inference
  */
-async function callGroq(prompt, systemPrompt = '', maxTokens = 1024) {
+async function callGroq(prompt, systemPrompt = '', maxTokens = 1024, sessionId = 'session-global') {
   const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -77,13 +95,18 @@ async function callGroq(prompt, systemPrompt = '', maxTokens = 1024) {
   if (!response.ok) {
     throw new Error(`Groq error: ${JSON.stringify(data)}`);
   }
-  return data.choices[0].message.content;
+  const content = data.choices[0].message.content;
+  
+  // Log token and cost usage
+  logUsage(sessionId, MODELS.fast.name, systemPrompt + '\n' + prompt, content);
+  
+  return content;
 }
 
 /**
  * Call Gemini API
  */
-async function callGemini(prompt, systemPrompt = '', modelType = 'deep') {
+async function callGemini(prompt, systemPrompt = '', modelType = 'deep', sessionId = 'session-global') {
   const client = getGeminiClient();
   const modelConfig = modelType === 'flash' ? MODELS.flash : MODELS.deep;
   const model = client.getGenerativeModel({
@@ -92,16 +115,21 @@ async function callGemini(prompt, systemPrompt = '', modelType = 'deep') {
   });
 
   const result = await model.generateContent(prompt);
-  return result.response.text();
+  const text = result.response.text();
+  
+  // Log token and cost usage
+  logUsage(sessionId, modelConfig.name, systemPrompt + '\n' + prompt, text);
+
+  return text;
 }
 
 /**
  * Call Anthropic Claude API for validation
  */
-async function callClaude(prompt, systemPrompt = '', maxTokens = 1024) {
+async function callClaude(prompt, systemPrompt = '', maxTokens = 1024, sessionId = 'session-global') {
   if (!process.env.ANTHROPIC_API_KEY) {
     console.warn('[Router] ANTHROPIC_API_KEY not found. Falling back to Gemini Pro for validation.');
-    return await callGemini(prompt, systemPrompt, 'deep');
+    return await callGemini(prompt, systemPrompt, 'deep', sessionId);
   }
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -124,32 +152,35 @@ async function callClaude(prompt, systemPrompt = '', maxTokens = 1024) {
   if (!response.ok) {
     throw new Error(`Anthropic error: ${JSON.stringify(data)}`);
   }
-  return data.content[0].text;
+  const content = data.content[0].text;
+
+  // Log token and cost usage
+  logUsage(sessionId, MODELS.validation.name, systemPrompt + '\n' + prompt, content);
+
+  return content;
 }
 
 /**
  * Classify which agent should handle a user request.
- * Uses Groq for speed (~200ms vs 2s+ for Gemini).
+ * dynamically uses whichever model is currently mapped to 'router'.
  */
-async function classifyIntent(userInput) {
-  const systemPrompt = `You are a routing classifier. Given a user message, respond with EXACTLY one JSON object:
-{
-  "agent": "research" | "action" | "memory",
-  "reason": "brief explanation",
-  "complexity": "simple" | "moderate" | "complex"
-}
-
-Rules:
-- "research": user wants facts, information, analysis, comparisons, or answers to questions
-- "action": user wants to DO something (send email, make call, generate report, scrape website)
-- "memory": user asks about past conversations, preferences, or history
-
-Respond with ONLY the JSON object. No other text.`;
-
-  const result = await callGroq(userInput, systemPrompt, 256);
+async function classifyIntent(userInput, sessionId = 'session-global') {
+  const systemPrompt = agentsConfig.router.systemPrompt;
+  
+  const modelType = dynamicModels.router;
+  let result;
+  
+  console.log(`[Router] Running Classification intent using router model: ${modelType}`);
+  
+  if (modelType === 'fast') {
+    result = await callGroq(userInput, systemPrompt, 256, sessionId);
+  } else if (modelType === 'validation') {
+    result = await callClaude(userInput, systemPrompt, 256, sessionId);
+  } else {
+    result = await callGemini(userInput, systemPrompt, modelType, sessionId);
+  }
 
   try {
-    // Extract JSON from response
     const jsonMatch = result.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       return JSON.parse(jsonMatch[0]);
@@ -157,7 +188,6 @@ Respond with ONLY the JSON object. No other text.`;
     throw new Error('No JSON found in response');
   } catch (err) {
     console.error('[Router] Failed to parse classification:', result);
-    // Default to research if classification fails
     return { agent: 'research', reason: 'classification failed, defaulting', complexity: 'moderate' };
   }
 }
@@ -168,30 +198,37 @@ Respond with ONLY the JSON object. No other text.`;
 function selectModel(complexity) {
   switch (complexity) {
     case 'simple':
-      return 'fast';       // Groq — instant
+      return 'fast';
     case 'complex':
-      return 'deep';       // Gemini Pro — thorough
+      return 'deep';
     case 'validation':
-      return 'validation'; // Claude — strict validator
+      return 'validation';
     default:
-      return 'flash';      // Gemini Flash — balanced
+      return 'flash';
   }
 }
 
 /**
  * Generate a response using the appropriate model
+ * Supports dynamic model configurations when role matches
  */
-async function generateResponse(prompt, systemPrompt = '', complexity = 'moderate') {
-  const modelType = selectModel(complexity);
+async function generateResponse(prompt, systemPrompt = '', complexity = 'moderate', sessionId = 'session-global') {
+  let modelType;
+  
+  if (['router', 'research', 'action', 'validator'].includes(complexity)) {
+    modelType = dynamicModels[complexity];
+  } else {
+    modelType = selectModel(complexity);
+  }
 
-  console.log(`[Router] Using model: ${MODELS[modelType].name} (${complexity})`);
+  console.log(`[Router] Using model: ${MODELS[modelType]?.name || modelType} for role/complexity: ${complexity}`);
 
   if (modelType === 'fast') {
-    return await callGroq(prompt, systemPrompt);
+    return await callGroq(prompt, systemPrompt, 1024, sessionId);
   } else if (modelType === 'validation') {
-    return await callClaude(prompt, systemPrompt);
+    return await callClaude(prompt, systemPrompt, 1024, sessionId);
   } else {
-    return await callGemini(prompt, systemPrompt, modelType);
+    return await callGemini(prompt, systemPrompt, modelType, sessionId);
   }
 }
 
@@ -202,5 +239,7 @@ module.exports = {
   callClaude,
   classifyIntent,
   selectModel,
-  generateResponse
+  generateResponse,
+  getActiveModels,
+  setActiveModels
 };

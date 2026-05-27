@@ -22,6 +22,7 @@ const researchAgent = require('./agents/research-agent');
 const actionAgent = require('./agents/action-agent');
 const { validateWithRetry } = require('./agents/validator-agent');
 const langfuse = require('./langfuse');
+const { getSessionSummary } = require('./services/auditor');
 
 const MEMORY_API = process.env.MEMORY_API_URL || 'http://localhost:3001';
 
@@ -61,7 +62,7 @@ async function processInput({ userInput, sessionId, userId = 'agent-zero-user' }
 
   // ── Step 1: Classify intent using Groq (fast) ──
   const classifyStart = Date.now();
-  const classification = await classifyIntent(userInput);
+  const classification = await classifyIntent(userInput, sessionId);
   const classifyMs = Date.now() - classifyStart;
 
   console.log(`[Orchestrator] Classified as: ${classification.agent} (${classification.complexity}) in ${classifyMs}ms`);
@@ -86,7 +87,7 @@ async function processInput({ userInput, sessionId, userId = 'agent-zero-user' }
   };
 
   // ── Step 3: Run with validation loop ──
-  const { result, validation, passed } = await validateWithRetry(userInput, generateFn);
+  const { result, validation, passed } = await validateWithRetry(userInput, generateFn, sessionId);
   agentResult = result;
 
   const validationEmoji = passed ? '✅' : '⚠️';
@@ -121,7 +122,8 @@ async function processInput({ userInput, sessionId, userId = 'agent-zero-user' }
       totalMs,
       classificationMs: classifyMs,
       agentMs: agentResult.latencyMs || 0
-    }
+    },
+    audit: getSessionSummary(sessionId)
   };
 
   console.log(`[Orchestrator] ✅ Done in ${totalMs}ms | confidence: ${validation.confidence}/100\n`);

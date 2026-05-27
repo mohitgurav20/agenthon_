@@ -78,6 +78,62 @@ export default function DashboardPage() {
   const [liveEvents, setLiveEvents] = useState<AgentOutputEvent[]>([]);
   const supabase = createClient();
 
+  // Dynamic LLM Switcher state
+  const [activeModels, setActiveModels] = useState<{
+    router: string;
+    research: string;
+    action: string;
+    validator: string;
+  }>({
+    router: 'fast',
+    research: 'flash',
+    action: 'deep',
+    validator: 'validation'
+  });
+
+  // Token & Cost Auditor state
+  const [sessionAudit, setSessionAudit] = useState<{
+    totalCalls: number;
+    totalInputTokens: number;
+    totalOutputTokens: number;
+    totalCost: number;
+  }>({
+    totalCalls: 0,
+    totalInputTokens: 0,
+    totalOutputTokens: 0,
+    totalCost: 0
+  });
+
+  // Fetch active models on mount
+  useEffect(() => {
+    const fetchActiveModels = async () => {
+      try {
+        const res = await fetch('http://localhost:3002/api/models/active');
+        if (res.ok) {
+          const data = await res.json();
+          setActiveModels(data);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch active models:', err);
+      }
+    };
+    fetchActiveModels();
+  }, []);
+
+  const handleModelChange = async (agent: string, modelVal: string) => {
+    const updated = { ...activeModels, [agent]: modelVal };
+    setActiveModels(updated);
+    try {
+      await fetch('http://localhost:3002/api/models/active', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated)
+      });
+    } catch (err) {
+      console.error('Failed to save model change:', err);
+    }
+  };
+
   useEffect(() => {
     // Subscribe to realtime changes on agent_outputs table
     const channel = supabase
@@ -252,6 +308,10 @@ export default function DashboardPage() {
         actionLogs: data.actionLogs
       });
 
+      if (data.audit) {
+        setSessionAudit(data.audit);
+      }
+
     } catch (err: any) {
       clearInterval(stepInterval);
       console.error(err);
@@ -292,25 +352,65 @@ export default function DashboardPage() {
         
         {/* Left Sidebar: System Info, Active Tools & Memory */}
         <aside className="w-80 border-r border-border glass-panel flex flex-col p-4 overflow-y-auto shrink-0 select-none z-10">
-          {/* Active Agents */}
+          {/* Dynamic LLM Switcher (Active Agents) */}
           <div className="mb-6">
-            <h2 className="text-xs font-mono tracking-widest text-gray-400 mb-3 uppercase">Active Agents</h2>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between p-2.5 rounded-xl bg-surface/50 border border-border">
-                <span className="text-sm font-medium">🧠 Router (Llama-3.1)</span>
-                <span className="text-xs font-mono text-secondary">Active</span>
+            <h2 className="text-xs font-mono tracking-widest text-gray-400 mb-3 uppercase">Active Agents Switcher</h2>
+            <div className="space-y-3">
+              {/* Router Select */}
+              <div className="flex flex-col p-2.5 rounded-xl bg-surface/50 border border-border">
+                <span className="text-xs font-mono text-gray-400 mb-1.5 uppercase font-bold">🧠 Router Agent</span>
+                <select
+                  value={activeModels.router}
+                  onChange={(e) => handleModelChange('router', e.target.value)}
+                  className="bg-background border border-border rounded-lg text-xs p-1.5 focus:outline-none focus:border-primary/50 text-gray-200"
+                >
+                  <option value="fast">Llama 3.1 70B (Groq) - Fast</option>
+                  <option value="deep">Gemini 1.5 Pro - Reasoning</option>
+                  <option value="flash">Gemini 1.5 Flash - Quick</option>
+                  <option value="validation">Claude 3.5 Sonnet - Strict</option>
+                </select>
               </div>
-              <div className="flex items-center justify-between p-2.5 rounded-xl bg-surface/50 border border-border">
-                <span className="text-sm font-medium">🔍 Research Agent (Gemini)</span>
-                <span className="text-xs font-mono text-secondary">Active</span>
+
+              {/* Research Select */}
+              <div className="flex flex-col p-2.5 rounded-xl bg-surface/50 border border-border">
+                <span className="text-xs font-mono text-gray-400 mb-1.5 uppercase font-bold">🔍 Research Agent</span>
+                <select
+                  value={activeModels.research}
+                  onChange={(e) => handleModelChange('research', e.target.value)}
+                  className="bg-background border border-border rounded-lg text-xs p-1.5 focus:outline-none focus:border-primary/50 text-gray-200"
+                >
+                  <option value="flash">Gemini 1.5 Flash - Fast & Light</option>
+                  <option value="deep">Gemini 1.5 Pro - Highly Detailed</option>
+                  <option value="fast">Llama 3.1 70B (Groq) - Instant</option>
+                </select>
               </div>
-              <div className="flex items-center justify-between p-2.5 rounded-xl bg-surface/50 border border-border">
-                <span className="text-sm font-medium">⚙️ Action Agent (Gemini)</span>
-                <span className="text-xs font-mono text-secondary">Active</span>
+
+              {/* Action Select */}
+              <div className="flex flex-col p-2.5 rounded-xl bg-surface/50 border border-border">
+                <span className="text-xs font-mono text-gray-400 mb-1.5 uppercase font-bold">⚙️ Action Agent</span>
+                <select
+                  value={activeModels.action}
+                  onChange={(e) => handleModelChange('action', e.target.value)}
+                  className="bg-background border border-border rounded-lg text-xs p-1.5 focus:outline-none focus:border-primary/50 text-gray-200"
+                >
+                  <option value="deep">Gemini 1.5 Pro - Structured Planning</option>
+                  <option value="flash">Gemini 1.5 Flash - Fast Actions</option>
+                  <option value="fast">Llama 3.1 70B (Groq) - Fast Plans</option>
+                </select>
               </div>
-              <div className="flex items-center justify-between p-2.5 rounded-xl bg-surface/50 border border-border">
-                <span className="text-sm font-medium">✅ Validator Agent (Claude)</span>
-                <span className="text-xs font-mono text-secondary">Active</span>
+
+              {/* Validator Select */}
+              <div className="flex flex-col p-2.5 rounded-xl bg-surface/50 border border-border">
+                <span className="text-xs font-mono text-gray-400 mb-1.5 uppercase font-bold">✅ Validator Agent</span>
+                <select
+                  value={activeModels.validator}
+                  onChange={(e) => handleModelChange('validator', e.target.value)}
+                  className="bg-background border border-border rounded-lg text-xs p-1.5 focus:outline-none focus:border-primary/50 text-gray-200"
+                >
+                  <option value="validation">Claude 3.5 Sonnet - Premium QA</option>
+                  <option value="deep">Gemini 1.5 Pro - Logic QA</option>
+                  <option value="flash">Gemini 1.5 Flash - High Speed QA</option>
+                </select>
               </div>
             </div>
           </div>
@@ -624,6 +724,36 @@ export default function DashboardPage() {
                   ) : (
                     <div className="text-gray-500 text-xs italic">
                       Send a message to view live latency & routing metrics.
+                    </div>
+                  )}
+                </div>
+
+                {/* Token & Cost Auditor Panel */}
+                <div className="mb-6 border-t border-border/60 pt-4">
+                  <h2 className="text-xs font-mono tracking-widest text-gray-400 mb-4 uppercase">Session Token & Cost Audit</h2>
+                  {sessionAudit.totalCalls > 0 ? (
+                    <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-gray-300 space-y-3">
+                      <div className="flex justify-between items-center border-b border-purple-500/20 pb-2">
+                        <span className="font-mono text-purple-400 font-bold uppercase text-[10px]">Session Cost ($)</span>
+                        <span className="text-sm font-bold font-mono text-purple-300">${sessionAudit.totalCost.toFixed(6)}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-center text-[10px] font-mono">
+                        <div className="p-1.5 rounded-lg bg-surface/50 border border-border/60">
+                          <span className="text-gray-500 block uppercase">LLM Calls</span>
+                          <span className="text-xs font-bold text-gray-300">{sessionAudit.totalCalls}</span>
+                        </div>
+                        <div className="p-1.5 rounded-lg bg-surface/50 border border-border/60">
+                          <span className="text-gray-500 block uppercase">Est. Tokens</span>
+                          <span className="text-xs font-bold text-gray-300">{sessionAudit.totalInputTokens + sessionAudit.totalOutputTokens}</span>
+                        </div>
+                      </div>
+                      <div className="text-[10px] text-gray-500 text-center leading-relaxed">
+                        Input/Output pricing logged per-model in real time. Heuristic cost evaluation.
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-gray-500 text-xs italic font-mono">
+                      Send a message to view dynamic cumulative session token & API cost model pricing logs.
                     </div>
                   )}
                 </div>

@@ -12,6 +12,7 @@
  */
 
 const { generateResponse } = require('../router');
+const agentsConfig = require('../config/agents.json');
 
 const MEMORY_API = process.env.MEMORY_API_URL || 'http://localhost:3001';
 const TOOLS_API = process.env.TOOLS_API_URL || 'http://localhost:3000';
@@ -82,18 +83,7 @@ async function run(userInput, sessionId, userId = 'agent-zero-user', complexity 
   console.log(`[ResearchAgent] Parallel fetch completed in ${parallelMs}ms`);
 
   // ── Build enriched prompt ──
-  const systemPrompt = `You are the Research Agent for Agent Zero. Your job is to provide accurate, well-sourced answers.
-
-You have been given:
-1. USER CONTEXT (Memories from Mem0 & documents from Supabase RAG)
-2. WEB SEARCH RESULTS — fresh information from the internet
-
-RULES:
-- Prioritize memories and knowledge base for personalized answers
-- Use web results for current/factual information
-- Always cite your sources (memory, knowledge base, or web)
-- If you're unsure, say so honestly
-- Return structured, clear responses`;
+  const systemPrompt = agentsConfig.research.systemPrompt;
 
   // Format memories and knowledge base depending on API format
   let contextBlock = '';
@@ -122,7 +112,7 @@ ${webResults.length > 0
 Please synthesize a comprehensive answer using all available sources.`;
 
   // ── Generate response using the right model ──
-  const answer = await generateResponse(enrichedPrompt, systemPrompt, complexity);
+  const answer = await generateResponse(enrichedPrompt, systemPrompt, 'research', sessionId);
 
   const totalMs = Date.now() - startTime;
 

@@ -13,6 +13,7 @@
  */
 
 const { generateResponse } = require('../router');
+const agentsConfig = require('../config/agents.json');
 
 const TOOLS_API = process.env.TOOLS_API_URL || 'http://localhost:3000';
 
@@ -30,29 +31,10 @@ const TOOL_ENDPOINTS = {
 /**
  * Use LLM to extract a structured action plan from user input
  */
-async function planAction(userInput) {
-  const systemPrompt = `You are an action planner. Given a user request, extract the specific tool call needed.
+async function planAction(userInput, sessionId) {
+  const systemPrompt = agentsConfig.action.systemPrompt;
 
-Available tools:
-- send_email: requires {to, subject, body}
-- send_whatsapp: requires {to, message}
-- make_phone_call: requires {phoneNumber, task}
-- web_search: requires {query}
-- web_scrape: requires {url, task}
-- analyze_data: requires {table, query, analysisType}
-- text_to_speech: requires {text}
-
-Respond with EXACTLY one JSON object:
-{
-  "tool": "tool_name",
-  "params": { ... required parameters ... },
-  "explanation": "what this action will do"
-}
-
-If the request requires MULTIPLE tools, return an array of action objects.
-Respond with ONLY valid JSON.`;
-
-  const result = await generateResponse(userInput, systemPrompt, 'simple');
+  const result = await generateResponse(userInput, systemPrompt, 'action', sessionId);
 
   try {
     const jsonMatch = result.match(/[\[{][\s\S]*[\]}]/);
@@ -113,7 +95,7 @@ async function run(userInput, sessionId, userId = 'agent-zero-user', complexity 
   const startTime = Date.now();
 
   // Step 1: Plan what tools to call
-  const actionPlan = await planAction(userInput);
+  const actionPlan = await planAction(userInput, sessionId);
   console.log(`[ActionAgent] Planned ${actionPlan.length} action(s)`);
 
   // Step 2: Execute all planned tools

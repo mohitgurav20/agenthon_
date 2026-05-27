@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # Postgres with pgvector for Person C RAG memory storage
+  db:
+    image: ankane/pgvector:latest
+    container_name: agent-zero-db
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: always
+
+  # Redis session cache for fast worker context switching
+  redis:
+    image: redis:alpine
+    container_name: agent-zero-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    restart: always
+
+  # Orchestrator backend (Person A API)
+  orchestrator:
+    build:
+      context: .
+      dockerfile: orchestrator/Dockerfile
+    container_name: agent-zero-orchestrator
+    ports:
+      - "3002:3002"
+    env_file:
+      - .env
+    environment:
+      - PORT=3002
+      - SUPABASE_URL=http://db:5432
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - db
+      - redis
+    restart: always
+
+  # Next.js Dashboard UI frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: agent-zero-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+    depends_on:
+      - orchestrator
+    restart: always
+
+volumes:
+  pgdata:
+  redisdata:

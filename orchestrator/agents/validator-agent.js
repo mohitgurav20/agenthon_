@@ -12,7 +12,8 @@
  * ============================================================
  */
 
-const { callClaude } = require('../router');
+const { generateResponse } = require('../router');
+const agentsConfig = require('../config/agents.json');
 
 const MAX_RETRIES = 2;
 const CONFIDENCE_THRESHOLD = 70;
@@ -20,33 +21,8 @@ const CONFIDENCE_THRESHOLD = 70;
 /**
  * Validate a response and score its confidence
  */
-async function validate(originalInput, agentResponse, sources = {}) {
-  const systemPrompt = `You are a strict quality validator for an AI agent system. Your job is to evaluate the quality of an agent's response.
-
-Score the response on these criteria:
-1. RELEVANCE (0-25): Does it actually answer the user's question?
-2. ACCURACY (0-25): Are the claims supported by the provided sources?
-3. COMPLETENESS (0-25): Does it cover all aspects of the question?
-4. CLARITY (0-25): Is it well-structured and easy to understand?
-
-Also check for:
-- Hallucinations: claims not supported by any source
-- Missing context: important information that was available but not used
-- Contradictions: statements that conflict with sources
-
-Respond with EXACTLY this JSON:
-{
-  "confidence": <total 0-100>,
-  "relevance": <0-25>,
-  "accuracy": <0-25>,
-  "completeness": <0-25>,
-  "clarity": <0-25>,
-  "hallucinations": ["list of unsupported claims, if any"],
-  "suggestions": "how to improve the response",
-  "verdict": "pass" | "retry" | "flag"
-}
-
-Respond with ONLY the JSON.`;
+async function validate(originalInput, agentResponse, sources = {}, sessionId = 'session-global') {
+  const systemPrompt = agentsConfig.validator.systemPrompt;
 
   const prompt = `ORIGINAL USER INPUT: ${originalInput}
 
@@ -60,7 +36,7 @@ AVAILABLE SOURCES:
 
 Evaluate this response now.`;
 
-  const result = await callClaude(prompt, systemPrompt, 512);
+  const result = await generateResponse(prompt, systemPrompt, 'validator', sessionId);
 
   try {
     const jsonMatch = result.match(/\{[\s\S]*\}/);
@@ -87,7 +63,7 @@ Evaluate this response now.`;
 /**
  * Run validation loop — retries if confidence is below threshold
  */
-async function validateWithRetry(originalInput, generateFn) {
+async function validateWithRetry(originalInput, generateFn, sessionId = 'session-global') {
   let lastResult = null;
   let lastValidation = null;
 
@@ -103,7 +79,7 @@ async function validateWithRetry(originalInput, generateFn) {
 
     // Validate
     const answer = lastResult.answer || lastResult.message || JSON.stringify(lastResult);
-    lastValidation = await validate(originalInput, answer, lastResult.sources || {});
+    lastValidation = await validate(originalInput, answer, lastResult.sources || {}, sessionId);
 
     console.log(`[Validator] Attempt ${attempt + 1}: confidence=${lastValidation.confidence}, verdict=${lastValidation.verdict}`);
 
