@@ -79,4 +79,14 @@ async function searchWeb(query, options = {}) {
   };
 }
 
-module.exports = { searchWeb };
+// Dedicated Job Crawler for Hackathon
+async function searchJobBoards({ language, role, location = "" }) {
+  // Advanced dork to specifically hit live job posts on major ATS platforms
+  const query = `(site:boards.greenhouse.io OR site:jobs.lever.co OR site:linkedin.com/jobs OR site:naukri.com/job-listings) "${role}" "${language}" ${location}`;
+  
+  console.log(`[JobCrawler] Hunting for jobs using Dork: ${query}`);
+  
+  return searchWeb(query, { maxResults: 10, searchDepth: 'advanced', includeAnswer: false });
+}
+
+module.exports = { searchWeb, searchJobBoards };

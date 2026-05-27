@@ -7,9 +7,9 @@
  * ============================================================
  */
 
-const { searchWeb } = require('./tavily-search');
+const { searchWeb, searchJobBoards } = require('./tavily-search');
 const { scrapeWeb } = require('./web-scraper');
-const { sendEmail } = require('./email-sender');
+const { sendEmail, sendDirectApplication } = require('./email-sender');
 const { sendWhatsApp } = require('./whatsapp-notifier');
 const { processDocument, searchDocuments } = require('./document-reader');
 const { analyzeImage } = require('./image-analyzer');
@@ -18,12 +18,15 @@ const { makePhoneCall } = require('./phone-caller');
 const { analyzeData } = require('./data-analytics');
 const { textToSpeech } = require('./voice-interface');
 const { executeSkyvernTask } = require('./skyvern-agent');
+const { executeAtsParser } = require('./managed_agent_tool');
 
 // Registry mapping tool names to their execution functions
 const toolRegistry = {
   'web_search': searchWeb,
+  'job_crawler': searchJobBoards,
   'web_scrape': scrapeWeb,
   'send_email': sendEmail,
+  'send_direct_application': sendDirectApplication,
   'send_whatsapp': sendWhatsApp,
   'rag_process_doc': processDocument,
   'rag_search': searchDocuments,
@@ -32,7 +35,8 @@ const toolRegistry = {
   'make_phone_call': makePhoneCall,
   'analyze_data': analyzeData,
   'text_to_speech': textToSpeech,
-  'skyvern_fill_form': executeSkyvernTask
+  'skyvern_fill_form': executeSkyvernTask,
+  'ats_parser': executeAtsParser
 };
 
 // --- Enterprise Hardening: Token Bucket Rate Limiter ---
@@ -139,8 +143,10 @@ module.exports = {
   executeTool,
   toolRegistry,
   searchWeb,
+  searchJobBoards,
   scrapeWeb,
   sendEmail,
+  sendDirectApplication,
   sendWhatsApp,
   processDocument,
   searchDocuments,
@@ -149,6 +155,7 @@ module.exports = {
   makePhoneCall,
   analyzeData,
   textToSpeech,
-  executeSkyvernTask
+  executeSkyvernTask,
+  executeAtsParser
 };
 

@@ -1,5 +1,6 @@
 import asyncio
 from browser_use import Agent
+from browser_use.browser.browser import Browser, BrowserConfig
 from langchain_openai import ChatOpenAI
 import sys
 import json
@@ -10,17 +11,43 @@ import os
 
 async def run_browser_task(url, task_description):
     try:
-        # Initialize the LLM for browser-use (requires API key in ENV)
+        # 1. Mount Active Chrome Profile
+        # This allows the browser to open already logged into LinkedIn/Naukri
+        local_app_data = os.environ.get('LOCALAPPDATA', '')
+        user_data_dir = os.path.join(local_app_data, 'Google', 'Chrome', 'User Data')
+        
+        browser = Browser(
+            config=BrowserConfig(
+                # Mount the default profile. (Note: Chrome must be closed on the host for this to work)
+                chrome_instance_path='C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' if os.path.exists('C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe') else None,
+                extra_chromium_args=[f'--user-data-dir={user_data_dir}', '--profile-directory=Default']
+            )
+        )
+
         llm = ChatOpenAI(model="gpt-4o")
         
-        full_task = f"Go to {url}. {task_description}"
+        # 2. ATS Autofill Logic (Greenhouse / Lever / LinkedIn / Naukri)
+        ats_instructions = (
+            "\n\n[ATS STANDARD PROTOCOL]: "
+            "1. IF GREENHOUSE/LEVER: Locate 'Resume/CV' input and upload the PDF. Map First Name, Last Name, Email. Click 'Submit Application'. "
+            "2. IF LINKEDIN: Use the 'Easy Apply' button. Follow the modal steps, upload the PDF if asked, and click 'Submit'. "
+            "3. IF NAUKRI: Click 'Apply'. If a form appears, fill basic details and attach the resume. "
+            "\n\n[HUMAN-IN-THE-LOOP PROTOCOL]: "
+            "If you encounter a CAPTCHA, Cloudflare check, or 2FA login screen, DO NOT try to solve it. "
+            "Immediately stop executing actions and output the exact text: 'HUMAN_INTERVENTION_REQUIRED'. "
+            "The system will alert the user to solve it in the visible Chromium window."
+        )
+        
+        full_task = f"Go to {url}. {task_description}. {ats_instructions}"
         
         agent = Agent(
             task=full_task,
             llm=llm,
+            browser=browser
         )
         
         result = await agent.run()
+        await browser.close()
         
         return {
             "success": True,
