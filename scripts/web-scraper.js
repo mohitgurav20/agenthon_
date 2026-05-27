@@ -25,7 +25,7 @@ async function fetchRawReadme(username, repoName) {
     const branches = ['main', 'master'];
     for (const branch of branches) {
         try {
-            const url = `https://raw.githubusercontent.com/${username}/${repoName}/${branch}/README.md`;
+            const url = `https://raw.githubusercontent.com/${encodeURIComponent(username)}/${encodeURIComponent(repoName)}/${branch}/README.md`;
             const response = await fetch(url, {
                 headers: { 'User-Agent': 'ResumeVault-AI-Ingester' }
             });
@@ -46,9 +46,9 @@ async function fetchRawReadme(username, repoName) {
 async function ingestGitHubProfile(username) {
     console.log(`\n🐙 [GitHub Ingest] Initiating crawl for profile: "${username}"...`);
     
-    // Check if APIs are active, otherwise run in high-fidelity mock mode
+    const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
     const isSupabaseLive = supabaseUrl && supabaseKey && !supabaseKey.includes('your_');
-    const isGeminiLive = process.env.GEMINI_API_KEY && !process.env.GEMINI_API_KEY.includes('your_');
+    const isGeminiLive = geminiKey && !geminiKey.includes('your_');
 
     if (!isSupabaseLive || !isGeminiLive) {
         console.warn("⚠️  [GitHub Ingest] Credentials not configured. Running high-fidelity simulation.");
@@ -74,7 +74,7 @@ async function ingestGitHubProfile(username) {
 
     try {
         // Fetch repositories from GitHub API
-        const repoUrl = `https://api.github.com/users/${username}/repos?per_page=10&sort=updated`;
+        const repoUrl = `https://api.github.com/users/${encodeURIComponent(username)}/repos?per_page=10&sort=updated`;
         const response = await fetch(repoUrl, {
             headers: { 'User-Agent': 'ResumeVault-AI-Ingester' }
         });
@@ -149,7 +149,10 @@ if (require.main === module) {
     const username = args[0] || 'mohitgurav'; // Default fallback username
     ingestGitHubProfile(username)
         .then(() => process.exit(0))
-        .catch(() => process.exit(1));
+        .catch((err) => {
+            console.error("❌ Fatal error during CLI execution:", err);
+            process.exit(1);
+        });
 }
 
 module.exports = { ingestGitHubProfile };
