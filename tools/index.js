@@ -17,6 +17,7 @@ const { generateReport } = require('./report-generator');
 const { makePhoneCall } = require('./phone-caller');
 const { analyzeData } = require('./data-analytics');
 const { textToSpeech } = require('./voice-interface');
+const { runRemoteSandbox } = require('./managed_agent_tool');
 
 // Registry mapping tool names to their execution functions
 const toolRegistry = {
@@ -30,7 +31,8 @@ const toolRegistry = {
   'generate_report': generateReport,
   'make_phone_call': makePhoneCall,
   'analyze_data': analyzeData,
-  'text_to_speech': textToSpeech
+  'text_to_speech': textToSpeech,
+  'run_remote_sandbox': runRemoteSandbox
 };
 
 /**
@@ -89,5 +91,6 @@ module.exports = {
   generateReport,
   makePhoneCall,
   analyzeData,
-  textToSpeech
+  textToSpeech,
+  runRemoteSandbox
 };
