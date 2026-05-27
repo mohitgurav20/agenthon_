@@ -7,7 +7,7 @@
     "orchestrator": "node orchestrator/server.js",
     "tools": "node server.js",
     "memory": "node memory/memory_api.js",
-    "start:all": "concurrently \"npm run memory\" \"npm run tools\" \"npm run orchestrator\"",
+    "start:all": "npm run orchestrator",
     "dev": "npm run start:all",
     "test": "node test_orchestrator.js",
     "test:tools": "node test_tools.js",

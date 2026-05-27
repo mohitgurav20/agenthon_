@@ -1423,6 +1423,11 @@ process.on('SIGTERM', async () => {
   process.exit(0);
 });
 
+const toolsApi = require('../server');
+const memoryApi = require('../memory/memory_api');
+app.use('/', toolsApi);
+app.use('/', memoryApi);
+
 // ── Start Server ──
 app.listen(PORT, () => {
   console.log(`

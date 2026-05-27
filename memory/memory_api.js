@@ -16,7 +16,7 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-const app = express();
+const app = express.Router();
 app.use(express.json());
 
 const PORT = process.env.MEMORY_PORT || 3001;
@@ -191,16 +191,4 @@ app.post('/memory/reset', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`Memory API server running on port ${PORT}`);
-    console.log(`Endpoints available:`);
-    console.log(`- POST /memory/store`);
-    console.log(`- POST /memory/retrieve`);
-    console.log(`- POST /memory/context`);
-    console.log(`- POST /memory/letta/agent`);
-    console.log(`- POST /memory/letta/message`);
-    console.log(`- GET  /memory/letta/agent/:id/memory`);
-    console.log(`- POST /memory/deduplicate`);
-    console.log(`- POST /memory/hybrid-search`);
-    console.log(`- POST /memory/reset`);
-});
+module.exports = app;

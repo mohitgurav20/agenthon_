@@ -12,8 +12,8 @@ const express = require('express');
 const cors = require('cors');
 const tools = require('./tools');
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+const app = express.Router();
+
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
@@ -93,8 +93,4 @@ app.post('/api/webhooks/skyvern', (req, res) => {
   res.status(200).send('OK');
 });
 
-// Run server
-app.listen(PORT, () => {
-  console.log(`\n⚡ AGENT ZERO Server running on http://localhost:${PORT}`);
-  console.log(`🔧 Loaded ${Object.keys(tools.toolRegistry).length} tools from registry`);
-});
+module.exports = app;
