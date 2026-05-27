@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Zero — Enterprise Production Readiness Roadmap</title>
+  <style>
+    :root {
+      --bg-color: #0b0f19;
+      --card-bg: #111827;
+      --border-color: #1f2937;
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+      --primary: #c084fc;
+      --secondary: #22d3ee;
+      --accent: #fbbf24;
+      --success: #34d399;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 40px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 24px;
+      margin-bottom: 32px;
+    }
+
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .logo {
+      font-size: 32px;
+      background: rgba(192, 132, 252, 0.2);
+      border: 1px solid var(--primary);
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .title h1 {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: var(--text-main);
+    }
+
+    .title p {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-family: monospace;
+    }
+
+    .badge {
+      background: rgba(52, 211, 153, 0.1);
+      border: 1px solid var(--success);
+      color: var(--success);
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: monospace;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-color);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    p.section-desc {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    .section {
+      margin-bottom: 40px;
+    }
+
+    /* Teammate Roles */
+    .teammate-card {
+      background: rgba(255, 255, 255, 0.01);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 28px;
+    }
+
+    .teammate-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      border-bottom: 1px dashed var(--border-color);
+      padding-bottom: 12px;
+    }
+
+    .teammate-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .teammate-role {
+      font-size: 12px;
+      font-family: monospace;
+      background: rgba(192, 132, 252, 0.15);
+      color: var(--primary);
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    .task-list {
+      list-style: none;
+    }
+
+    .task-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 14px;
+    }
+
+    .task-item:last-child {
+      border-bottom: none;
+    }
+
+    .checkbox {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--text-muted);
+      border-radius: 4px;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    .task-text strong {
+      color: var(--text-main);
+    }
+
+    .task-text span {
+      display: block;
+      color: var(--text-muted);
+      font-size: 12px;
+      margin-top: 4px;
+      line-height: 1.5;
+    }
+
+    /* Print styles */
+    @media print {
+      body {
+        background-color: #ffffff;
+        color: #000000;
+        padding: 0;
+      }
+
+      .container {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        background: none;
+      }
+
+      :root {
+        --text-main: #000000;
+        --text-muted: #374151;
+        --border-color: #9ca3af;
+        --card-bg: #ffffff;
+      }
+
+      .teammate-card {
+        border: 1px solid #9ca3af;
+        background: none;
+        page-break-inside: avoid;
+        margin-bottom: 30px;
+      }
+
+      .checkbox {
+        border: 2px solid #000000;
+      }
+
+      h2 {
+        color: #000000;
+        border-bottom: 2px solid #000000;
+      }
+
+      .badge {
+        border: 1px solid #000000;
+        color: #000000;
+        background: none;
+      }
+
+      .logo {
+        background: none;
+        border: 2px solid #000000;
+        color: #000000;
+      }
+
+      .teammate-role {
+        border: 1px solid #9ca3af;
+        background: none;
+        color: #000000;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="logo-area">
+        <div class="logo">💎</div>
+        <div class="title">
+          <h1>AGENT ZERO</h1>
+          <p>Production Readiness Engineering Checklist</p>
+        </div>
+      </div>
+      <div class="badge">Production Grade</div>
+    </header>
+
+    <!-- STRATEGY -->
+    <div class="section">
+      <h2>🎯 Enterprise Engineering Standards</h2>
+      <p class="section-desc">To achieve robust, high-performance execution on hackathon day, the codebase must be hardened to production standards. This includes adding variables validation, runtime safety bounds, semantic deduplication, connection pooling, and complete fallback workflows across all 3 Git branches.</p>
+    </div>
+
+    <!-- WORKLOADS -->
+    <div class="section">
+      <h2>📋 Team Task Checklist</h2>
+      <p class="section-desc">Work on these tasks strictly inside your respective branches. Merge only through Pull Requests into `dev` when complete.</p>
+
+      <!-- PERSON A -->
+      <div class="teammate-card">
+        <div class="teammate-header">
+          <span class="teammate-name">🧠 Person A — Orchestrator & Infrastructure Lead</span>
+          <span class="teammate-role">feat/orchestrator</span>
+        </div>
+        <ul class="task-list">
+          <li class="task-item">
+            <div class="checkbox"></div>
+            <div class="task-text">
+              <strong>Zod-Based Environment Variables Validation</strong>
+              <span>Implement strict schema validation on startup to verify all key APIs (OpenAI, Gemini, Supabase, Twilio) exist, throwing clean fatal stack traces if missing.</span>
+            </div>
+          </li>
+          <li class="task-item">
+            <div class="checkbox"></div>
+            <div class="task-text">
+              <strong>Centralized JSON Persona Mappings</strong>
+              <span>Extract prompt strategies and roles out of javascript logic into a single `config/agents.json` file to allow rapid renaming and restructuring on demand.</span>
+            </div>
+          </li>
+          <li class="task-item">
+            <div class="checkbox"></div>
+            <div class="task-text">
+              <strong>Token Auditor & Cumulative Cost Tracker</strong>
+              <span>Add metadata trackers compiling exact tokens consumed by Llama router, Gemini, and Claude validator, writing cumulative costs to database logs.</span>
+            </div>
+          </li>
+          <li class="task-item">
+            <div class="checkbox"></div>
+            <div class="task-text">
+              <strong>Full-Stack Docker Compose Orchestration</strong>
+              <span>Write robust Dockerfiles and `docker-compose.yml` to bundle Next.js, Express, a local Redis session cache, and a PostgreSQL pgvector image.</span>
+            </div>
+          </li>
+          <li class="task-item">
+            <div class="checkbox"></div>
+            <div class="task-text">
+              <strong>Interactive LLM Runtime Swapper UI</strong>
+              <span>Add front-end control drop-downs letting developers dynamically override LLM endpoints (Gemini, Claude, Groq) per agent role on the fly.</span>
+            </div>
+          </li>
+          <li class="task-item">
+            <div class="checkbox"></div>
+            <div class="task-text">
+              <strong>Centralized Diagnostics `/health` Endpoint</strong>
+              <span>Write a detailed server health check showing network latency bounds, memory limits, Redis uptime, and Supabase connection latency.</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- PERSON B -->
+      <div class="teammate-card">
+        <div class="teammate-header">
+          <span class="teammate-name">⚙️ Person B — Integration & Tools Lead</span>
+          <span class="teammate-role">feat/tools</span>
+        </div>
+        <ul class="task-list">
+          <li class="task-item">
+            <div class="checkbox"></div>
+            <div class="task-text">
+              <strong>Strict Promise-Based Tool Timeouts</strong>
+              <span>Wrap every dynamic tool call (e.g. Scraper, voice API, Skyvern) in a 15-second Promise.race timeout to prevent frozen agent processing loops.</span>
+            </div>
+          </li>
+          <li class="task-item">
+            <div class="checkbox"></div>
+            <div class="task-text">
+              <strong>Full-Suite Mock Providers Switch</strong>
+              <span>Implement `process.env.USE_MOCKS` that intercepts Tavily search, WhatsApp, SMS, and Skyvern, routing requests to seed databases without calling live endpoints.</span>
+            </div>
+          </li>
+          <li class="task-item">
+            <div class="checkbox"></div>
+            <div class="task-text">
+              <strong>Skyvern cloud Webhook Callback Receiver</strong>
+              <span>Expose a POST endpoint in the Express server to handle asynchronous task updates from Skyvern and pipe status events to the frontend.</span>
+            </div>
+          </li>
+          <li class="task-item">
+            <div class="checkbox"></div>
+            <div class="task-text">
+              <strong>Dynamic Model Context Protocol (MCP) Loader</strong>
+              <span>Set up an MCP connection broker to map local system directory files and command line tools directly to the AI agent runtime.</span>
+            </div>
+          </li>
+          <li class="task-item">
+            <div class="checkbox"></div>
+            <div class="task-text">
+              <strong>Redis-Backed Tool Invocation Rate Limiter</strong>
+              <span>Add a token-bucket rate limiter limiting the maximum number of tool calls per execution to protect APIs from recursive infinite calls.</span>
+            </div>
+          </li>
+          <li class="task-item">
+            <div class="checkbox"></div>
+            <div class="task-text">
+              <strong>Jest Automated E2E Tools Test Suite</strong>
+              <span>Build robust testing specs validating that all 12 tools accept, execute, and respond with exact JSON schema outputs.</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- PERSON C -->
+      <div class="teammate-card">
+        <div class="teammate-header">
+          <span class="teammate-name">💾 Person C — Database & Memory Lead</span>
+          <span class="teammate-role">feat/memory</span>
+        </div>
+        <ul class="task-list">
+          <li class="task-item">
+            <div class="checkbox"></div>
+            <div class="task-text">
+              <strong>Reciprocal Rank Fusion (RRF) Hybrid Search</strong>
+              <span>Implement reciprocal rank scoring to merge semantic vector results with full-text keyword (BM25) search inside the Supabase client.</span>
+            </div>
+          </li>
+          <li class="task-item">
+            <div class="checkbox"></div>
+            <div class="task-text">
+              <strong>Supabase Connection Pool Optimization</strong>
+              <span>Configure pooling configurations using PgBouncer settings to prevent db exhaustion when under heavy benchmarking stress.</span>
+            </div>
+          </li>
+          <li class="task-item">
+            <div class="checkbox"></div>
+            <div class="task-text">
+              <strong>Mem0 Fact Semantic Deduplication Loop</strong>
+              <span>Write a database trigger or middleware to periodically run similarity cleanup on user personalization vectors, pruning duplicate facts.</span>
+            </div>
+          </li>
+          <li class="task-item">
+            <div class="checkbox"></div>
+            <div class="task-text">
+              <strong>Recursive Folder Document Ingest Engine</strong>
+              <span>Provide a robust console CLI tool to parse nested directory files (.pdf, .txt, .json), chunk semantically, and generate pgvector embeddings automatically.</span>
+            </div>
+          </li>
+          <li class="task-item">
+            <div class="checkbox"></div>
+            <div class="task-text">
+              <strong>Clean Slate Database Reset Route</strong>
+              <span>Implement `/api/memory/reset` Express endpoints to purge memory cache tables and rebuild vectors for quick sandbox resets.</span>
+            </div>
+          </li>
+          <li class="task-item">
+            <div class="checkbox"></div>
+            <div class="task-text">
+              <strong>SQL Schema Migration Scripts</strong>
+              <span>Write structured migrations (`supabase/migrations/`) documenting table setups, HNSW vector indices, and foreign key relations for clean setups.</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>
