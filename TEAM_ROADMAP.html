@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Zero — Team Task Assignment & Roadmap</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --border-color: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #8b5cf6;
+      --secondary: #06b6d4;
+      --accent: #f59e0b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 40px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 24px;
+      margin-bottom: 32px;
+    }
+
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .logo {
+      font-size: 32px;
+      background: rgba(139, 92, 246, 0.2);
+      border: 1px solid var(--primary);
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .title h1 {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: var(--text-main);
+    }
+
+    .title p {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-family: monospace;
+    }
+
+    .badge {
+      background: rgba(6, 182, 212, 0.1);
+      border: 1px solid var(--secondary);
+      color: var(--secondary);
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: monospace;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-color);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    p.section-desc {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    .section {
+      margin-bottom: 40px;
+    }
+
+    .grid-tools {
+      display: grid;
+      grid-template-cols: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .tool-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 12px;
+      text-align: center;
+      font-weight: 500;
+    }
+
+    /* Teammate Roles */
+    .teammate-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .teammate-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .teammate-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .teammate-role {
+      font-size: 12px;
+      font-family: monospace;
+      background: rgba(139, 92, 246, 0.15);
+      color: var(--primary);
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    .task-list {
+      list-style: none;
+    }
+
+    .task-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 14px;
+    }
+
+    .task-item:last-child {
+      border-bottom: none;
+    }
+
+    .checkbox {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--text-muted);
+      border-radius: 4px;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    .task-text strong {
+      color: var(--text-main);
+    }
+
+    .task-text span {
+      display: block;
+      color: var(--text-muted);
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    /* Print styles */
+    @media print {
+      body {
+        background-color: #ffffff;
+        color: #000000;
+        padding: 0;
+      }
+
+      .container {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        background: none;
+      }
+
+      :root {
+        --text-main: #000000;
+        --text-muted: #4b5563;
+        --border-color: #d1d5db;
+        --card-bg: #ffffff;
+      }
+
+      .tool-item {
+        border: 1px solid #d1d5db;
+        background: none;
+        color: #000000;
+      }
+
+      .teammate-card {
+        border: 1px solid #d1d5db;
+        background: none;
+        page-break-inside: avoid;
+      }
+
+      .checkbox {
+        border: 2px solid #000000;
+      }
+
+      h2 {
+        color: #000000;
+        border-bottom: 2px solid #000000;
+      }
+
+      .badge {
+        border: 1px solid #000000;
+        color: #000000;
+        background: none;
+      }
+
+      .logo {
+        background: none;
+        border: 2px solid #000000;
+        color: #000000;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="logo-area">
+        <div class="logo">⚡</div>
+        <div class="title">
+          <h1>AGENT ZERO</h1>
+          <p>Multi-Agent Orchestration Blueprint</p>
+        </div>
+      </div>
+      <div class="badge">Hackathon Ready</div>
+    </header>
+
+    <!-- SECTION 1: Status -->
+    <div class="section">
+      <h2>📊 Project Status Overview</h2>
+      <p class="section-desc">We have successfully completed all core Day 1, 2, and 3 deliverables for the platform foundations. The codebase is highly integrated and prepared for scaling.</p>
+      
+      <div class="grid-tools">
+        <div class="tool-item">🧠 Llama Router</div>
+        <div class="tool-item">🔍 Gemini Research</div>
+        <div class="tool-item">⚙️ Gemini Action</div>
+        <div class="tool-item">✅ Claude Validator</div>
+        <div class="tool-item">📁 Supabase RAG</div>
+        <div class="tool-item">🧠 Mem0 Profile</div>
+        <div class="tool-item">💻 Sandbox API</div>
+        <div class="tool-item">🌐 Skyvern Agent</div>
+        <div class="tool-item">📧 Email Dispatcher</div>
+        <div class="tool-item">💬 WhatsApp Bot</div>
+        <div class="tool-item">📞 Voice Call API</div>
+        <div class="tool-item">📊 Langfuse Tracing</div>
+      </div>
+    </div>
+
+    <!-- SECTION 2: Gaps -->
+    <div class="section">
+      <h2>🛠️ Core Code Strengthening</h2>
+      <p class="section-desc">Before starting custom implementations on the hackathon day, the team needs to work together to harden the base template:</p>
+      
+      <ul class="task-list">
+        <li class="task-item">
+          <div class="checkbox"></div>
+          <div class="task-text">
+            <strong>Implement Mock Mode</strong>
+            <span>Create fake mock response logic inside tools so you can run end-to-end tests completely for free.</span>
+          </div>
+        </li>
+        <li class="task-item">
+          <div class="checkbox"></div>
+          <div class="task-text">
+            <strong>Dockerize the stack</strong>
+            <span>Create a root docker-compose file to spin up Next.js, Express, and Database with one click.</span>
+          </div>
+        </li>
+        <li class="task-item">
+          <div class="checkbox"></div>
+          <div class="task-text">
+            <strong>Optimize Search Fallbacks</strong>
+            <span>Set up automated local fallback flows if external LLMs or search indexers hit query limits.</span>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- SECTION 3: Teammate Assignments -->
+    <div class="section">
+      <h2>📋 Assigned Teammate Checklists</h2>
+      <p class="section-desc">To make sure the project remains modular and clean, each person must perform their work exclusively in their assigned branch.</p>
+
+      <!-- PERSON A -->
+      <div class="teammate-card">
+        <div class="teammate-header">
+          <span class="teammate-name">🧠 Person A — Orchestrator Lead</span>
+          <span class="teammate-role">feat/orchestrator</span>
+        </div>
+        <ul class="task-list">
+          <li class="task-item">
+            <div class="checkbox"></div>
+            <div class="task-text">
+              <strong>Dockerize the Workspace</strong>
+              <span>Write the Dockerfile and docker-compose.yml to run services locally.</span>
+            </div>
+          </li>
+          <li class="task-item">
+            <div class="checkbox"></div>
+            <div class="task-text">
+              <strong>Centralize Agent Persona Configurations</strong>
+              <span>Extract prompt templates from javascript logic into a single json config for quick editing.</span>
+            </div>
+          </li>
+          <li class="task-item">
+            <div class="checkbox"></div>
+            <div class="task-text">
+              <strong>Adjustable Validator Threshold</strong>
+              <span>Add front-end control sliders to tweak Claude Validator strictness on the fly.</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- PERSON B -->
+      <div class="teammate-card">
+        <div class="teammate-header">
+          <span class="teammate-name">⚙️ Person B — Tools Lead</span>
+          <span class="teammate-role">feat/tools</span>
+        </div>
+        <ul class="task-list">
+          <li class="task-item">
+            <div class="checkbox"></div>
+            <div class="task-text">
+              <strong>Create Local Mock Providers</strong>
+              <span>Implement offline mock behavior inside tools/ folder for SMS, calls, and scraper.</span>
+            </div>
+          </li>
+          <li class="task-item">
+            <div class="checkbox"></div>
+            <div class="task-text">
+              <strong>Skyvern Result Webhooks/Polling</strong>
+              <span>Update the Skyvern execution tool to fetch final page logs upon form automation completions.</span>
+            </div>
+          </li>
+          <li class="task-item">
+            <div class="checkbox"></div>
+            <div class="task-text">
+              <strong>Prevent Multi-execution Loops</strong>
+              <span>Add rate limit bounds to action triggers so agents don't call tools infinitely.</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- PERSON C -->
+      <div class="teammate-card">
+        <div class="teammate-header">
+          <span class="teammate-name">💾 Person C — Memory Lead</span>
+          <span class="teammate-role">feat/memory</span>
+        </div>
+        <ul class="task-list">
+          <li class="task-item">
+            <div class="checkbox"></div>
+            <div class="task-text">
+              <strong>Semantic Batch Ingestion Script</strong>
+              <span>Build a helper script to automatically slice and vector-index local files into pgvector.</span>
+            </div>
+          </li>
+          <li class="task-item">
+            <div class="checkbox"></div>
+            <div class="task-text">
+              <strong>Pgvector RRF Hybrid Search</strong>
+              <span>Implement Reciprocal Rank Fusion to merge semantic search scores with exact string lookups.</span>
+            </div>
+          </li>
+          <li class="task-item">
+            <div class="checkbox"></div>
+            <div class="task-text">
+              <strong>Session Clearing Endpoint</strong>
+              <span>Expose a DELETE route to wipe memory vectors to start fresh benchmarking sessions.</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>
