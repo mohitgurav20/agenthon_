@@ -8,19 +8,25 @@ const client = new MemoryClient({ apiKey: process.env.MEM0_API_KEY });
  * Retrieves memories from Mem0 using semantic search
  * @param {string} query - The search query
  * @param {string} userId - The user ID
+ * @param {string} [cluster] - Optional tagged memory cluster to filter query (e.g. 'user-preferences')
  * @returns {Promise<Array>} List of relevant memories
  */
-async function retrieveMemory(query, userId) {
+async function retrieveMemory(query, userId, cluster) {
     if (!query || !userId) {
         console.error("Missing query or userId.");
         return [];
     }
 
     try {
-        console.log(`Retrieving memories for user ${userId} with query: "${query}"...`);
+        console.log(`Retrieving memories for user ${userId}${cluster ? ` [Cluster: ${cluster}]` : ''} with query: "${query}"...`);
         
+        const filters = { user_id: userId };
+        if (cluster) {
+            filters.cluster = cluster;
+        }
+
         // Mem0 search automatically handles embeddings and semantic search
-        const results = await client.search(query, { filters: { user_id: userId }, limit: 5 });
+        const results = await client.search(query, { filters, limit: 5 });
         
         console.log("Memory successfully retrieved.");
         return results.results || results;

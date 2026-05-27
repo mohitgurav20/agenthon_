@@ -24,12 +24,12 @@ const PORT = process.env.PORT || 3001;
 // Endpoint to store memory in Mem0
 app.post('/memory/store', async (req, res) => {
     try {
-        const { text, userId } = req.body;
+        const { text, userId, cluster } = req.body;
         if (!text || !userId) {
             return res.status(400).json({ error: "Missing 'text' or 'userId' in request body." });
         }
         
-        const result = await storeMemory(text, userId);
+        const result = await storeMemory(text, userId, cluster);
         res.json({ success: true, result });
     } catch (error) {
         console.error("Error in /memory/store:", error);
@@ -40,12 +40,12 @@ app.post('/memory/store', async (req, res) => {
 // Endpoint to retrieve memory from Mem0
 app.post('/memory/retrieve', async (req, res) => {
     try {
-        const { query, userId } = req.body;
+        const { query, userId, cluster } = req.body;
         if (!query || !userId) {
             return res.status(400).json({ error: "Missing 'query' or 'userId' in request body." });
         }
         
-        const results = await retrieveMemory(query, userId);
+        const results = await retrieveMemory(query, userId, cluster);
         res.json({ success: true, results });
     } catch (error) {
         console.error("Error in /memory/retrieve:", error);
@@ -56,12 +56,12 @@ app.post('/memory/retrieve', async (req, res) => {
 // Endpoint to build combined context (Mem0 + Supabase RAG)
 app.post('/memory/context', async (req, res) => {
     try {
-        const { query, userId } = req.body;
+        const { query, userId, cluster } = req.body;
         if (!query || !userId) {
             return res.status(400).json({ error: "Missing 'query' or 'userId' in request body." });
         }
         
-        const contextString = await buildContext(query, userId);
+        const contextString = await buildContext(query, userId, cluster);
         res.json({ success: true, context: contextString });
     } catch (error) {
         console.error("Error in /memory/context:", error);
