@@ -24,6 +24,18 @@ const CONFIDENCE_THRESHOLD = 70;
 async function validate(originalInput, agentResponse, sources = {}, sessionId = 'session-global') {
   const systemPrompt = agentsConfig.validator.systemPrompt;
 
+  let atsBlock = '';
+  if (sources.atsResult) {
+    atsBlock = `\n--- ATS EVALUATION METRICS (FROM SANDBOX DETECTOR) ---
+- Overall ATS Score: ${sources.atsResult.atsScore}/100 (Threshold required is >= 90)
+- Keyword Density Score: ${sources.atsResult.keywordScore}/100
+- Structural Section Score: ${sources.atsResult.structureScore}/100
+- Parsed Word Count: ${sources.atsResult.wordCount}
+- Missing Sections: ${sources.atsResult.missingSections?.join(', ') || 'None'}
+- Missing Keywords/Skills: ${sources.atsResult.missingKeywords?.join(', ') || 'None'}
+- ATS Optimization Feedback: ${sources.atsResult.feedback || 'Excellent structure.'}\n`;
+  }
+
   const prompt = `ORIGINAL USER INPUT: ${originalInput}
 
 AGENT RESPONSE TO VALIDATE:
@@ -33,7 +45,7 @@ AVAILABLE SOURCES:
 - Memories used: ${sources.memoriesUsed || 0}
 - RAG documents used: ${sources.ragDocsUsed || 0}
 - Web results used: ${sources.webResultsUsed || 0}
-
+${atsBlock}
 Evaluate this response now.`;
 
   const result = await generateResponse(prompt, systemPrompt, 'validator', sessionId);
@@ -41,7 +53,14 @@ Evaluate this response now.`;
   try {
     const jsonMatch = result.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
+      const parsed = JSON.parse(jsonMatch[0]);
+      // Hard enforce retry if ATS score exists and is below 90
+      if (sources.atsResult && sources.atsResult.atsScore < 90 && parsed.verdict === 'pass') {
+        parsed.verdict = 'retry';
+        parsed.confidence = Math.min(65, parsed.confidence);
+        parsed.suggestions = `[Enforced ATS Check] Resume scored ${sources.atsResult.atsScore}/100, which is below our 90/100 threshold. ${sources.atsResult.feedback} ${parsed.suggestions}`;
+      }
+      return parsed;
     }
     throw new Error('No JSON found');
   } catch (err) {

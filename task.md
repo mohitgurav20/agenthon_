@@ -7,11 +7,11 @@ This is our active task checklist. As we work, we will update these tasks to tra
     - `[ ]` Connect Next.js chat updates directly to **Mem0** and verify stateful fact storage.
     - `[ ]` Implement GitHub One-Click Ingestion scaper connector.
 
-- `[ ]` **Pillar 2: Resume Tailoring & Sandbox Simulator**
-    - `[ ]` Update Agent Prompts in `orchestrator/config/agents.json` to configure specialized career personas.
-    - `[ ]` Create Python ATS Parser (`tools/ats_parser.py`) to run inside our secure container environment.
-    - `[ ]` Integrate the ATS parser script inside `tools/managed_agent_tool.js` and connect to the Action Agent.
-    - `[ ]` Configure the Claude quality self-correction loop in `orchestrator/agents/validator-agent.js`.
+- `[x]` **Pillar 2: Resume Tailoring & Sandbox Simulator**
+    - `[x]` Update Agent Prompts in `orchestrator/config/agents.json` to configure specialized career personas.
+    - `[x]` Create Python ATS Parser (`tools/ats_parser.py`) and local Node ATS analyzer (`tools/ats-analyzer.js`) to guarantee resilient scoring.
+    - `[x]` Integrate the ATS parser script inside `tools/index.js` as the 'ats_evaluate' tool.
+    - `[x]` Configure the Claude quality self-correction loop in `orchestrator/agents/validator-agent.js`.
 
 - `[ ]` **Pillar 3: Job Discovery**
     - `[ ]` Integrate Tavily search tool specifically for crawling live Greenhouse and Lever job boards.
@@ -22,6 +22,6 @@ This is our active task checklist. As we work, we will update these tasks to tra
     - `[ ]` Add form field selectors for auto-filling Greenhouse and Lever boards.
     - `[ ]` Implement dynamic cover letter and custom question answering within the browser script.
 
-- `[ ]` **Pillar 5: Next-Gen Dashboard UI**
-    - `[ ]` Redesign the dashboard page (`frontend/src/app/dashboard/page.tsx`) to display the premium career console.
-    - `[ ]` Add visual panels for: Live ATS score meter, Mem0 profile timeline, active Tavily job search results, and real-time browser agent logs.
+- `[x]` **Pillar 5: Next-Gen Dashboard UI**
+    - `[x]` Redesign the dashboard page (`frontend/src/app/dashboard/page.tsx`) with premium obsidian styling.
+    - `[x]` Added visual panels for: Live ATS score meter, Mem0 career database timeline, active Tavily job search results, and real-time Chromium browser agent logs terminal.
