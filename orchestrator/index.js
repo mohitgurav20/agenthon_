@@ -30,14 +30,12 @@ const MEMORY_API = process.env.MEMORY_API_URL || 'http://localhost:3001';
  */
 async function storeMemory(userInput, agentResponse, userId = 'agent-zero-user') {
   try {
+    const text = `User: ${userInput}\nAssistant: ${typeof agentResponse === 'string' ? agentResponse : JSON.stringify(agentResponse)}`;
     await fetch(`${MEMORY_API}/memory/store`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        messages: [
-          { role: 'user', content: userInput },
-          { role: 'assistant', content: typeof agentResponse === 'string' ? agentResponse : JSON.stringify(agentResponse) }
-        ],
+        text,
         userId
       })
     });

@@ -12,7 +12,7 @@
  * ============================================================
  */
 
-const { callGroq } = require('../router');
+const { callClaude } = require('../router');
 
 const MAX_RETRIES = 2;
 const CONFIDENCE_THRESHOLD = 70;
@@ -60,7 +60,7 @@ AVAILABLE SOURCES:
 
 Evaluate this response now.`;
 
-  const result = await callGroq(prompt, systemPrompt, 512);
+  const result = await callClaude(prompt, systemPrompt, 512);
 
   try {
     const jsonMatch = result.match(/\{[\s\S]*\}/);

@@ -1,0 +1,172 @@
+{
+  "name": "Agent Zero Base Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "agent-input",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.MEMORY_API_URL || 'http://localhost:3001'}}/memory/context",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"query\": \"={{$json.body.userInput}}\",\n  \"userId\": \"={{$json.body.userId || 'agent-zero-user'}}\"\n}",
+        "options": {}
+      },
+      "id": "fetch-memory-mcp",
+      "name": "Fetch Memory & RAG",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gemini-1.5-pro",
+        "options": {
+          "systemMessage": "You are Agent Zero. Synthesize an answer based on the provided user memories, knowledge base context, and search results."
+        }
+      },
+      "id": "gemini-llm",
+      "name": "Gemini 1.5 Pro Reasoning",
+      "type": "n8n-nodes-base.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        650,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/agent_outputs",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"session_id\": \"={{$node[\"Webhook Trigger\"].json.body.sessionId}}\",\n  \"agent_name\": \"orchestrator\",\n  \"input\": \"={{$node[\"Webhook Trigger\"].json.body.userInput}}\",\n  \"output\": \"={{$json.output}}\",\n  \"confidence\": 85\n}",
+        "options": {}
+      },
+      "id": "save-supabase",
+      "name": "Save to Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        850,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.MEMORY_API_URL || 'http://localhost:3001'}}/memory/store",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"text\": \"User: {{$node[\"Webhook Trigger\"].json.body.userInput}}\\nAssistant: {{$node[\"Gemini 1.5 Pro Reasoning\"].json.output}}\",\n  \"userId\": \"={{$node[\"Webhook Trigger\"].json.body.userId || 'agent-zero-user'}}\"\n}",
+        "options": {}
+      },
+      "id": "store-memory",
+      "name": "Store Memory",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        850,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"response\": \"={{$node[\"Gemini 1.5 Pro Reasoning\"].json.output}}\",\n  \"sessionId\": \"={{$node[\"Webhook Trigger\"].json.body.sessionId}}\"\n}",
+        "options": {}
+      },
+      "id": "webhook-response",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Memory & RAG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Memory & RAG": {
+      "main": [
+        [
+          {
+            "node": "Gemini 1.5 Pro Reasoning",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini 1.5 Pro Reasoning": {
+      "main": [
+        [
+          {
+            "node": "Save to Supabase",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Store Memory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Supabase": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Memory": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "versionId": "1.0.0",
+  "id": "agent-zero-base"
+}

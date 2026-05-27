@@ -33,6 +33,13 @@ const MODELS = {
     model: 'gemini-1.5-flash',
     description: 'Quick summaries, search result processing',
     maxTokens: 2048
+  },
+  validation: {
+    name: 'claude-validation',
+    provider: 'anthropic',
+    model: 'claude-3-5-sonnet-20241022',
+    description: 'Strict response validation and quality check',
+    maxTokens: 1024
   }
 };
 
@@ -89,6 +96,38 @@ async function callGemini(prompt, systemPrompt = '', modelType = 'deep') {
 }
 
 /**
+ * Call Anthropic Claude API for validation
+ */
+async function callClaude(prompt, systemPrompt = '', maxTokens = 1024) {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.warn('[Router] ANTHROPIC_API_KEY not found. Falling back to Gemini Pro for validation.');
+    return await callGemini(prompt, systemPrompt, 'deep');
+  }
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': process.env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: MODELS.validation.model,
+      max_tokens: maxTokens,
+      system: systemPrompt || undefined,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.1
+    })
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(`Anthropic error: ${JSON.stringify(data)}`);
+  }
+  return data.content[0].text;
+}
+
+/**
  * Classify which agent should handle a user request.
  * Uses Groq for speed (~200ms vs 2s+ for Gemini).
  */
@@ -129,11 +168,13 @@ Respond with ONLY the JSON object. No other text.`;
 function selectModel(complexity) {
   switch (complexity) {
     case 'simple':
-      return 'fast';   // Groq — instant
+      return 'fast';       // Groq — instant
     case 'complex':
-      return 'deep';   // Gemini Pro — thorough
+      return 'deep';       // Gemini Pro — thorough
+    case 'validation':
+      return 'validation'; // Claude — strict validator
     default:
-      return 'flash';  // Gemini Flash — balanced
+      return 'flash';      // Gemini Flash — balanced
   }
 }
 
@@ -147,6 +188,8 @@ async function generateResponse(prompt, systemPrompt = '', complexity = 'moderat
 
   if (modelType === 'fast') {
     return await callGroq(prompt, systemPrompt);
+  } else if (modelType === 'validation') {
+    return await callClaude(prompt, systemPrompt);
   } else {
     return await callGemini(prompt, systemPrompt, modelType);
   }
@@ -156,6 +199,7 @@ module.exports = {
   MODELS,
   callGroq,
   callGemini,
+  callClaude,
   classifyIntent,
   selectModel,
   generateResponse

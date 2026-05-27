@@ -85,9 +85,8 @@ async function run(userInput, sessionId, userId = 'agent-zero-user', complexity 
   const systemPrompt = `You are the Research Agent for Agent Zero. Your job is to provide accurate, well-sourced answers.
 
 You have been given:
-1. USER MEMORIES — things the user has told us before
-2. KNOWLEDGE BASE — relevant documents from our database
-3. WEB SEARCH RESULTS — fresh information from the internet
+1. USER CONTEXT (Memories from Mem0 & documents from Supabase RAG)
+2. WEB SEARCH RESULTS — fresh information from the internet
 
 RULES:
 - Prioritize memories and knowledge base for personalized answers
@@ -96,17 +95,24 @@ RULES:
 - If you're unsure, say so honestly
 - Return structured, clear responses`;
 
+  // Format memories and knowledge base depending on API format
+  let contextBlock = '';
+  if (context && typeof context.context === 'string') {
+    contextBlock = context.context;
+  } else {
+    const mems = context && context.memories && context.memories.length > 0
+      ? context.memories.map((m, i) => `[Memory ${i + 1}]: ${m.memory || m.content || JSON.stringify(m)}`).join('\n')
+      : '(no relevant memories found)';
+    const docs = context && context.ragResults && context.ragResults.length > 0
+      ? context.ragResults.map((r, i) => `[Doc ${i + 1}]: ${r.content || JSON.stringify(r)}`).join('\n')
+      : '(no relevant documents found)';
+    contextBlock = `--- USER MEMORIES (from Mem0) ---\n${mems}\n\n--- KNOWLEDGE BASE (from Supabase RAG) ---\n${docs}`;
+  }
+
   const enrichedPrompt = `USER QUESTION: ${userInput}
 
---- USER MEMORIES (from Mem0) ---
-${context.memories && context.memories.length > 0
-    ? context.memories.map((m, i) => `[Memory ${i + 1}]: ${m.memory || m.content || JSON.stringify(m)}`).join('\n')
-    : '(no relevant memories found)'}
-
---- KNOWLEDGE BASE (from Supabase RAG) ---
-${context.ragResults && context.ragResults.length > 0
-    ? context.ragResults.map((r, i) => `[Doc ${i + 1}]: ${r.content || JSON.stringify(r)}`).join('\n')
-    : '(no relevant documents found)'}
+--- USER CONTEXT ---
+${contextBlock}
 
 --- WEB SEARCH RESULTS (from Tavily) ---
 ${webResults.length > 0
