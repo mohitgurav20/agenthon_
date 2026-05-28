@@ -14,6 +14,8 @@
     .page-header {
       padding: 12rem 4vw 4rem;
       text-align: center;
+      position: relative;
+      z-index: 1;
     }
     
     .page-header h1 {
@@ -35,6 +37,12 @@
       font-size: 1rem;
       line-height: 1.6;
       margin-top: 0.5rem;
+    }
+
+    /* Ensure architecture section content stacks above fixed canvas */
+    .architecture {
+      position: relative;
+      z-index: 1;
     }
   </style>
 </head>
@@ -64,8 +72,8 @@
 
   <!-- Page Header -->
   <div class="page-header">
-    <h1>System Architecture</h1>
-    <p>Every core module, integration, and security layer that powers the autonomous job application pipeline.</p>
+    <h1>Every Layer, Built to Win.</h1>
+    <p>Eight production-grade systems working in parallel — from 3072-dim semantic search to headless Chromium auto-fill — each built to get you hired faster.</p>
   </div>
 
   <!-- Bento Grid -->
@@ -79,7 +87,7 @@
             <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
           </div>
           <h3>Supabase pgvector RAG</h3>
-          <p>We use OpenAI embeddings to convert unstructured candidate resumes into multi-dimensional semantic vector spaces. Utilizing Reciprocal Rank Fusion (RRF) Hybrid Search, the system scores and filters job listings in milliseconds based on semantic skillset relevance.</p>
+          <p>Your resume is chunked and vectorized into 3072-dimensional embeddings via OpenAI. Every project, skill, and achievement is stored as a semantic coordinate in Supabase pgvector. When jobs drop, RRF Hybrid Search runs a simultaneous full-text + semantic scan — ranking matches in milliseconds, not keywords.</p>
           
           <!-- Live RAG Visualization Widget -->
           <div class="rag-visualization">
@@ -112,7 +120,7 @@
             <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
           </div>
           <h3>Browser-Use Autonomy</h3>
-          <p>Our Python browser agents mount Chrome profiles to natively navigate complex job boards. The agent auto-fills multi-page ATS forms exactly like a human would.</p>
+          <p>The Python browser-use agent mounts your live Chrome user profile, opens Greenhouse, Lever, or Naukri natively, then uses LLM vision to parse every dynamic form field. Multi-page ATS forms are filled end-to-end without a single static API call — indistinguishable from a real human applicant.</p>
           
           <!-- Terminal Logs Visualizer -->
           <div class="widget-terminal">
@@ -139,7 +147,7 @@
             <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
           </div>
           <h3>ElevenLabs TTS Voice</h3>
-          <p>Get real-time synthesized voice updates the second a recruiter matches your profile, opens your resume, or successfully submits an application.</p>
+          <p>The second a recruiter opens your application or changes your status, FLUX fires an ElevenLabs synthesis request and delivers a natural, conversational voice memo directly to your device. You hear what's happening before you even open your dashboard.</p>
           
           <!-- Custom Audio Player Widget -->
           <div class="audio-player-widget">
@@ -170,14 +178,14 @@
             <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
           </div>
           <h3>Twilio WhatsApp Alerts</h3>
-          <p>Stay updated 24/7 without opening a web dashboard. Built-in Twilio webhooks deliver instantaneous WhatsApp chat alerts as applications are matched, queued, and successfully submitted by the backend agents.</p>
+          <p>Every agent event — match found, application queued, form submitted, CAPTCHA detected — fires a Twilio WhatsApp webhook to your phone. No dashboard refresh. No email thread. Just instant, contextual updates exactly when you need them.</p>
           
           <!-- WhatsApp Mockup Visualizer -->
           <div class="whatsapp-mockup">
             <div class="whatsapp-header">
               <div class="whatsapp-avatar">RZ</div>
               <div class="whatsapp-status">
-                <h4>ResumeVault AI</h4>
+                <h4>FLUX Agent Zero</h4>
                 <span>Active Agent Loop</span>
               </div>
             </div>
@@ -206,7 +214,7 @@
             <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"></path></svg>
           </div>
           <h3>CopilotKit Conversational Chat</h3>
-          <p>Direct the multi-agent system conversationally. Swapping to the CopilotChat interface lets you state your search preferences—such as filtering out on-site roles or specifying minimum salaries—and watches the agents refine their queue live.</p>
+          <p>Speak directly to your orchestrator. Ask it to filter out on-site roles, set a minimum salary threshold, or reprioritize your target stack. The multi-agent pipeline refines its queue in real-time — no settings page, no manual filters, just conversation.</p>
           
           <!-- CopilotKit UI Widget -->
           <div class="copilot-chat-mockup">
@@ -233,7 +241,7 @@
             <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
           </div>
           <h3>Career Cockpit Tracker</h3>
-          <p>Watch applications move in real-time. Our custom cockpit frontend displays a robust HTML5 drag-and-drop Kanban tracker (Applied, Viewed, Interview) alongside zero-dependency SVG meters animating your resume-to-job matching scores.</p>
+          <p>Every application lives in a live Kanban board — Found, Applying, Submitted. Cards are powered by HTML5 native drag-and-drop. An animated SVG ATS score meter shows your semantic match rate in real-time as agents refine your resume to hit above 90%.</p>
           
           <!-- Draggable Kanban Board Mockup -->
           <div style="background-color: #f7f5ee; border: 1px solid rgba(116, 119, 123, 0.15); border-radius: 16px; padding: 1.25rem; margin-top: 1.5rem; display: flex; flex-direction: column; gap: 10px;">
@@ -264,7 +272,7 @@
             <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
           </div>
           <h3>Token-Bucket Rate Limiting</h3>
-          <p>Enterprise anti-ban design. The application loop is mathematically governed by a token-bucket rate limiter, limiting tool executions to safeguard candidate profiles on strict job boards.</p>
+          <p>Mathematically governed application pacing. A token-bucket algorithm caps all tool executions at 50 burst requests, refilling 1 token every 2 seconds. Your account is never flagged, never suspended. The system applies at full speed within safe operating thresholds.</p>
           
           <!-- Speed Gauge Mockup -->
           <div style="background-color: #141517; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 1.25rem; margin-top: 1.5rem; text-align: left; font-family: monospace; font-size: 0.8rem; color: #fff;">
@@ -285,7 +293,7 @@
             <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
           </div>
           <h3>Human-in-the-Loop Resilient Pauses</h3>
-          <p>When the browser agent meets a CAPTCHA or 2FA challenge, it immediately triggers a <code>HUMAN_INTERVENTION_REQUIRED</code> event. The backend launcher gracefully pauses the execution queue, alerts you via WhatsApp, and waits for manual resolution on the display before resuming without losing state.</p>
+          <p>When the browser agent detects a CAPTCHA or 2FA gate, it emits a <code>HUMAN_INTERVENTION_REQUIRED</code> event, gracefully freezes the execution queue, and fires a WhatsApp alert with a deep link. You solve it in the open browser window. The agent resumes from exactly where it left off — full state preserved.</p>
           
           <!-- Warning CAPTCHA Alert Widget -->
           <div class="warning-alert-box" style="margin-top: 1.5rem;">
@@ -308,8 +316,8 @@
   <section class="cta-section">
     <spline-viewer url="https://prod.spline.design/nOUBHkeBuytkOast/scene.splinecode" class="cta-spline"></spline-viewer>
     <div class="cta-header-wrapper">
-      <h2>Ready to automate?</h2>
-      <p>Deploy your own Agent Zero and take back your time.</p>
+      <h2>Every system. One goal.</h2>
+      <p>Get you hired. Faster than you can apply manually. Start FLUX and let the agents work.</p>
     </div>
     <div class="cta-btn-wrapper">
       <a href="#" class="magnetic-btn light" id="ctaBtn"><span>Launch FLUX</span></a>
@@ -335,7 +343,6 @@
 
   <!-- Scripts -->
   <script type="module" src="https://unpkg.com/@splinetool/viewer/build/spline-viewer.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.34/dist/lenis.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
   <script src="script.js"></script>

@@ -14,6 +14,8 @@
     .page-header {
       padding: 12rem 4vw 4rem;
       text-align: center;
+      position: relative;
+      z-index: 1;
     }
     
     .page-header h1 {
@@ -36,6 +38,7 @@
       margin: 0 auto;
       padding: 2rem 4vw 8rem;
       position: relative;
+      z-index: 1; /* Stack above fixed orb canvas */
     }
     
     /* Timeline connecting line */
@@ -159,8 +162,8 @@
 
   <!-- Page Header -->
   <div class="page-header">
-    <h1>Engine Protocol</h1>
-    <p>A step-by-step breakdown of how FLUX automates, secures, and tracks your job search.</p>
+    <h1>The Engine Protocol.</h1>
+    <p>Five precise stages. From zero to submitted application. Built on Mem0, pgvector RAG, browser-use, and Twilio — each step automated so you don't have to be.</p>
   </div>
 
   <!-- Timeline Section -->
@@ -170,12 +173,13 @@
     <div class="step">
       <div class="step-number">1</div>
       <div class="step-content tilt-card">
-        <h3>Ingestion & Vectorization</h3>
-        <p>Your journey begins by uploading your unstructured resume (PDF/DOCX) and defining your exact target career parameters through our Conversational Copilot drawer. The system leverages advanced OpenAI embedding models to index your comprehensive skills and work experience into multi-dimensional vectors, saving them securely inside the Supabase pgvector store.</p>
+        <h3>Ingest, Vectorize &amp; Remember</h3>
+        <p>Upload your resume (PDF or DOCX) or paste your GitHub profile URL. FLUX's ingestion pipeline fires on two tracks simultaneously: OpenAI embedding models convert your skills and achievements into 3072-dimensional vectors stored in Supabase pgvector, while Mem0 stateful memory stores your preferences, target roles, and career history across every future session. One upload. Permanent, persistent context.</p>
         <div class="step-tags">
           <span class="tag">Supabase pgvector</span>
           <span class="tag">OpenAI Embeddings</span>
-          <span class="tag">Zod Schema Validation</span>
+          <span class="tag">Mem0 Stateful Memory</span>
+          <span class="tag">GitHub Ingestion</span>
         </div>
       </div>
     </div>
@@ -185,11 +189,12 @@
       <div class="step-number">2</div>
       <div class="step-content tilt-card">
         <h3>Semantic Match Discovery</h3>
-        <p>The Orchestrator agent crawls corporate ATS boards and platforms (leveraging LinkedIn, Greenhouse, and Lever) on an automated schedule. Rather than relying on simple keyword filters, ResumeVault employs Reciprocal Rank Fusion (RRF) Hybrid Search to query job description vectors against your resume embeddings, ranking matches with true semantic context.</p>
+        <p>The Orchestrator agent runs a continuous, automated crawl of Greenhouse, Lever, and LinkedIn ATS boards via the Tavily Job Crawler. Rather than naive keyword matching, FLUX deploys Reciprocal Rank Fusion (RRF) Hybrid Search — querying job description vectors against your pgvector profile to surface only high-fidelity matches above your configured threshold.</p>
         <div class="step-tags">
-          <span class="tag">LinkedIn Fast Scraper</span>
-          <span class="tag">RRF Hybrid Search</span>
           <span class="tag">Tavily Job Crawler</span>
+          <span class="tag">RRF Hybrid Search</span>
+          <span class="tag">LinkedIn Fast Scraper</span>
+          <span class="tag">Semantic Gap Analysis</span>
         </div>
       </div>
     </div>
@@ -198,12 +203,13 @@
     <div class="step">
       <div class="step-number">3</div>
       <div class="step-content tilt-card">
-        <h3>Browser Engine Inception</h3>
-        <p>For high-scoring job positions, the browser launcher spins up a headless Chromium browser instance within a secure local sandbox. The Python browser-use agent mounts your local Chrome profile, natively logs into portals, dynamically analyzes form fields, and inputs your accurate details directly into the ATS database.</p>
+        <h3>Browser Inception &amp; Auto-Fill</h3>
+        <p>For every high-scoring match, the browser launcher boots a headless Chromium session and mounts your live Chrome user data directory — so it's already logged into LinkedIn, Naukri, and Greenhouse. The Python browser-use agent uses LLM vision to parse dynamic form fields, writes tailored essay responses using your Mem0 context, uploads your resume, and submits. Exactly like a real human. Every time.</p>
         <div class="step-tags">
-          <span class="tag">Browser-Use Agent</span>
+          <span class="tag">browser-use Agent</span>
           <span class="tag">Headless Chromium</span>
-          <span class="tag">Local MCP Sandbox</span>
+          <span class="tag">LLM Vision Form Parsing</span>
+          <span class="tag">On-the-Fly Essay Solver</span>
         </div>
       </div>
     </div>
@@ -212,12 +218,13 @@
     <div class="step">
       <div class="step-number">4</div>
       <div class="step-content tilt-card">
-        <h3>Anti-Ban Security</h3>
-        <p>To protect candidate accounts from getting flagged by strict B2B job boards, ResumeVault structures all operations through mathematical Token-Bucket Rate Limiters. If the browser faces an advanced CAPTCHA or 2FA verification challenge, the system triggers a resilient pause, alerts you immediately via WhatsApp, and resumes instantly after you manual-solve.</p>
+        <h3>Anti-Ban Security &amp; Resilient Recovery</h3>
+        <p>Every tool execution is governed by a token-bucket rate limiter — 50 burst operations, refilling 1 token every 2 seconds — ensuring FLUX never triggers suspicious rate patterns on strict job boards. If a CAPTCHA or 2FA gate appears, the system emits a <code>HUMAN_INTERVENTION_REQUIRED</code> signal, fires an instant WhatsApp alert, freezes the queue, and waits. You solve it in the visible browser. Full state is preserved. Zero applications lost.</p>
         <div class="step-tags">
           <span class="tag">Token-Bucket Limiter</span>
           <span class="tag">Resilient Pauses</span>
-          <span class="tag">WhatsApp Webhooks</span>
+          <span class="tag">Twilio WhatsApp Webhooks</span>
+          <span class="tag">15s Global Timeouts</span>
         </div>
       </div>
     </div>
@@ -226,12 +233,13 @@
     <div class="step">
       <div class="step-number">5</div>
       <div class="step-content tilt-card">
-        <h3>Recruiter Intel Feedback</h3>
-        <p>Once an application is successfully submitted, you are updated instantly. Even better, when a corporate recruiter opens your file or updates your application status, Twilio webhook integration captures the state update, generating a realistic synthesized recruiter voice memo through ElevenLabs to brief you on-demand.</p>
+        <h3>Recruiter Intel &amp; Live Feedback</h3>
+        <p>The moment an application is submitted, your Career Cockpit updates. When a recruiter opens your PDF, the Twilio webhook captures the status change and triggers an ElevenLabs TTS synthesis — generating a natural voice memo briefing you on the recruiter's name, company, and action taken. Your job search doesn't just run on autopilot. It talks back to you.</p>
         <div class="step-tags">
           <span class="tag">ElevenLabs TTS Voice</span>
-          <span class="tag">Twilio Integration</span>
-          <span class="tag">Real-time Dashboard Feedback</span>
+          <span class="tag">Twilio Webhook</span>
+          <span class="tag">Career Cockpit Live Dashboard</span>
+          <span class="tag">Resume A/B Analytics</span>
         </div>
       </div>
     </div>
@@ -242,8 +250,8 @@
   <section class="cta-section">
     <spline-viewer url="https://prod.spline.design/nOUBHkeBuytkOast/scene.splinecode" class="cta-spline"></spline-viewer>
     <div class="cta-header-wrapper">
-      <h2>Ready to automate?</h2>
-      <p>Deploy your own Agent Zero and take back your time.</p>
+      <h2>Five steps to hired.</h2>
+      <p>While you focus on interviews, FLUX handles everything before them.</p>
     </div>
     <div class="cta-btn-wrapper">
       <a href="#" class="magnetic-btn light" id="ctaBtn"><span>Launch FLUX</span></a>
@@ -269,7 +277,6 @@
 
   <!-- Scripts -->
   <script type="module" src="https://unpkg.com/@splinetool/viewer/build/spline-viewer.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.34/dist/lenis.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
   <script src="script.js"></script>
