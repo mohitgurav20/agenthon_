@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FLUX — AI Resume Builder & Job Hunter</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Custom Cursor -->
+  <div class="custom-cursor" id="customCursor"></div>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <a href="index.html" class="logo-container">
+      <div class="logo-icon">
+        <svg class="logo-svg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M8 26V6H24" stroke="var(--color-charcoal)" stroke-width="3.5" stroke-linecap="round" class="logo-p1"/>
+          <path d="M8 15H20" stroke="var(--color-charcoal)" stroke-width="3.5" stroke-linecap="round" class="logo-p2"/>
+          <circle cx="8" cy="6" r="3.5" fill="var(--color-mint)" class="logo-dot"/>
+        </svg>
+      </div>
+      <span class="logo-text">FLUX</span>
+    </a>
+    <div class="nav-links">
+      <a href="features.html">Features</a>
+      <a href="how-it-works.html">How it Works</a>
+      <a href="#" class="magnetic-btn" id="navBtn"><span>Launch FLUX</span></a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-badge">Production v2.0</div>
+    <h1 class="hero-title">FLUX: AI Resume Builder & Job Hunter.</h1>
+    <p class="hero-subtitle">Stop wasting hours on Workday and Greenhouse. FLUX finds, matches, and physically submits applications using headless browser autonomy.</p>
+    
+    <!-- Premium Live HTML Career Cockpit Dashboard Mockup -->
+    <div class="hero-image-container" style="background-color: #0b0c0e; border: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; box-shadow: 0 30px 60px rgba(0,0,0,0.3); border-radius: 20px;">
+      <!-- Dashboard Top Navbar -->
+      <div style="background-color: #121315; padding: 0.8rem 1.5rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); text-align: left; width: 100%;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+          <div style="width: 12px; height: 12px; border-radius: 50%; background-color: var(--color-mint); box-shadow: 0 0 10px var(--color-mint);"></div>
+          <span style="font-weight: 700; font-size: 0.9rem; color: #fff; letter-spacing: -0.02em;">FLUX Career Cockpit</span>
+          <span style="background: rgba(226,237,230,0.1); color: var(--color-mint); font-size: 0.65rem; font-weight: bold; padding: 2px 8px; border-radius: 99px;">Agent Zero Active</span>
+        </div>
+        <div style="display: flex; gap: 12px;">
+          <div style="width: 24px; height: 24px; border-radius: 50%; background-color: #2c2f33; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; color: #fff; font-weight: bold;">CC</div>
+        </div>
+      </div>
+      
+      <!-- Dashboard Main Body Grid -->
+      <div style="display: grid; grid-template-columns: 220px 1fr 260px; flex-grow: 1; overflow: hidden; width: 100%; text-align: left;">
+        
+        <!-- Left Sidebar: Logs & State -->
+        <div style="background-color: #0e0f11; padding: 1.25rem; border-right: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; gap: 20px; font-size: 0.75rem;">
+          <div>
+            <div style="color: var(--color-slate); font-weight: bold; margin-bottom: 8px; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.05em;">Orchestrator Status</div>
+            <div style="background-color: rgba(226,237,230,0.05); border: 1px solid rgba(226,237,230,0.1); padding: 8px; border-radius: 8px; display: flex; flex-direction: column; gap: 4px;">
+              <div style="color: #fff; font-weight: 600;">Queue: 14 Matches</div>
+              <div style="color: var(--color-slate);">Applying to Stripe...</div>
+              <div style="margin-top: 4px; height: 4px; width: 100%; background: #1c1d1f; border-radius: 2px; overflow: hidden;">
+                <div style="height: 100%; width: 68%; background: var(--color-mint); border-radius: 2px;"></div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div style="color: var(--color-slate); font-weight: bold; margin-bottom: 8px; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.05em;">Active Executions</div>
+            <div style="display: flex; flex-direction: column; gap: 8px; color: #b1b5c0; font-family: monospace;">
+              <div>• LinkedIn Crawler <span style="color:#9ece6a;">[Idle]</span></div>
+              <div>• pgvector Search <span style="color:#9ece6a;">[Ready]</span></div>
+              <div>• Headless Browser <span style="color:#e2ede6; font-weight: bold;">[Running]</span></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Center Panel: Kanban Tracker -->
+        <div style="background-color: #0b0c0e; padding: 1.5rem; display: flex; flex-direction: column; gap: 15px; border-right: 1px solid rgba(255,255,255,0.05);">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h4 style="color:#fff; font-size: 1.1rem; font-weight: 700; margin: 0;">Application Funnel</h4>
+            <span style="font-size: 0.7rem; color: var(--color-slate);">58 Submissions This Week</span>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; flex-grow: 1;">
+            <!-- Column 1: Found -->
+            <div style="background-color: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="color:var(--color-slate); font-weight:700; font-size:0.7rem; text-transform:uppercase; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px;">Found (8)</div>
+              <div style="background:#131416; border:1px solid rgba(255,255,255,0.05); padding:8px; border-radius:8px;">
+                <div style="color:#fff; font-weight:600; font-size:0.75rem;">Stripe</div>
+                <div style="color:var(--color-slate); font-size:0.65rem; margin-top:2px;">Software Engineer</div>
+              </div>
+              <div style="background:#131416; border:1px solid rgba(255,255,255,0.05); padding:8px; border-radius:8px;">
+                <div style="color:#fff; font-weight:600; font-size:0.75rem;">Linear</div>
+                <div style="color:var(--color-slate); font-size:0.65rem; margin-top:2px;">Fullstack Dev</div>
+              </div>
+            </div>
+            
+            <!-- Column 2: Applying -->
+            <div style="background-color: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="color:var(--color-slate); font-weight:700; font-size:0.7rem; text-transform:uppercase; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px;">Applying (1)</div>
+              <div style="background:rgba(226,237,230,0.03); border:1px solid rgba(226,237,230,0.2); padding:8px; border-radius:8px; position:relative;">
+                <div style="color:#fff; font-weight:600; font-size:0.75rem; display:flex; justify-content:space-between;">
+                  <span>OpenAI</span>
+                  <span style="font-size:0.6rem; background:rgba(226,237,230,0.1); color:var(--color-mint); padding:1px 4px; border-radius:4px;">98% RAG</span>
+                </div>
+                <div style="color:var(--color-slate); font-size:0.65rem; margin-top:2px;">Frontend Architect</div>
+                <div style="font-size:0.6rem; color:#e0af68; margin-top:4px; font-weight:bold;">• Auto-filling...</div>
+              </div>
+            </div>
+            
+            <!-- Column 3: Submitted -->
+            <div style="background-color: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="color:var(--color-slate); font-weight:700; font-size:0.7rem; text-transform:uppercase; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px;">Submitted (49)</div>
+              <div style="background:#131416; border:1px solid rgba(255,255,255,0.05); padding:8px; border-radius:8px; opacity:0.75;">
+                <div style="color:#fff; font-weight:600; font-size:0.75rem; display:flex; justify-content:space-between;">
+                  <span>Vercel</span>
+                  <span style="font-size:0.6rem; color:#9ece6a;">Success</span>
+                </div>
+                <div style="color:var(--color-slate); font-size:0.65rem; margin-top:2px;">Core Engineer</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Right Panel: ATS Analysis & Match Circle -->
+        <div style="background-color: #0e0f11; padding: 1.5rem; display: flex; flex-direction: column; gap: 20px; align-items: center; justify-content: center; text-align: center;">
+          <div style="color: var(--color-slate); font-weight: bold; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.05em; margin-bottom: -10px;">ATS Score Match</div>
+          
+          <!-- Animated Circle Match SVG -->
+          <div style="position: relative; width: 140px; height: 140px;">
+            <svg width="140" height="140" viewBox="0 0 140 140" style="transform: rotate(-90deg);">
+              <circle cx="70" cy="70" r="54" stroke="rgba(255,255,255,0.03)" stroke-width="8" fill="transparent" />
+              <circle cx="70" cy="70" r="54" stroke="var(--color-mint)" stroke-width="8" fill="transparent" stroke-dasharray="339" stroke-dashoffset="17" style="stroke-linecap: round; filter: drop-shadow(0 0 8px rgba(226,237,230,0.5));" />
+            </svg>
+            <div style="position: absolute; top: 0; left: 0; width: 140px; height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff;">
+              <span style="font-size: 2rem; font-weight: 800; letter-spacing:-0.05em;">95%</span>
+              <span style="font-size: 0.6rem; color: var(--color-slate); font-weight: bold; text-transform: uppercase;">Match Rate</span>
+            </div>
+          </div>
+          
+          <div style="background: rgba(226,237,230,0.05); padding: 10px; border-radius: 8px; border: 1px solid rgba(226,237,230,0.1); width: 100%; font-size: 0.7rem; color: #fff; line-height: 1.4;">
+            <strong>Synced Keywords:</strong> React, Next.js, Headless browser automation, pgvector RAG, Express.
+          </div>
+        </div>
+        
+      </div>
+    </div>
+  </section>
+
+  <!-- Value Prop Statement -->
+  <section class="statement">
+    <h2>
+      <span class="statement-word">We</span> <span class="statement-word">built</span> <span class="statement-word">a</span> <span class="statement-word">Python</span> <span class="statement-word">agent</span> <span class="statement-word">that</span> <span class="statement-word">takes</span> <span class="statement-word">over</span> <span class="statement-word">a</span> <span class="statement-word">headless</span> <span class="statement-word">browser,</span> <span class="statement-word">bypasses</span> <span class="statement-word">API</span> <span class="statement-word">limits,</span> <span class="statement-word">and</span> <span class="statement-word">applies</span> <span class="statement-word">to</span> <span class="statement-word">jobs</span> <span class="statement-word">exactly</span> <span class="statement-word">like</span> <span class="statement-word">a</span> <span class="statement-word">human.</span>
+    </h2>
+  </section>
+
+  <!-- Architecture Bento Grid -->
+  <section class="architecture">
+    <div class="section-header">
+      <h2>Enterprise Infrastructure</h2>
+      <p>Built for scale, safety, and absolute precision.</p>
+    </div>
+
+    <div class="bento-grid">
+      
+      <!-- Card 1: pgvector RAG -->
+      <div class="bento-card span-8 tilt-card">
+        <div class="bento-content">
+          <div class="bento-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+          </div>
+          <h3>Supabase pgvector RAG</h3>
+          <p>We use OpenAI embeddings to convert unstructured candidate resumes into multi-dimensional semantic vector spaces. Utilizing Reciprocal Rank Fusion (RRF) Hybrid Search, the system scores and filters job listings in milliseconds based on semantic skillset relevance.</p>
+          
+          <!-- Live RAG Visualization Widget -->
+          <div class="rag-visualization">
+            <div class="rag-grid"></div>
+            <!-- Primary Node (User Resume) -->
+            <div class="rag-node primary" style="top: 50%; left: 30%;"></div>
+            <!-- Target Match Node 1 (Stripe) -->
+            <div class="rag-node match" style="top: 25%; left: 70%;"></div>
+            <div class="rag-connection" style="top: 52%; left: 32%; width: 38%; transform: rotate(-20deg);"></div>
+            <span style="position: absolute; top: 15%; left: 60%; color: #9ece6a; font-size: 0.7rem; font-family: monospace; font-weight: bold; background: #0b0c0d; padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); z-index: 10;">Stripe Software Engineer (98% Match)</span>
+            
+            <!-- Target Match Node 2 (Linear) -->
+            <div class="rag-node match" style="top: 70%; left: 65%;"></div>
+            <div class="rag-connection" style="top: 52%; left: 32%; width: 34%; transform: rotate(18deg);"></div>
+            <span style="position: absolute; top: 78%; left: 55%; color: #9ece6a; font-size: 0.7rem; font-family: monospace; font-weight: bold; background: #0b0c0d; padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); z-index: 10;">Linear Core Developer (95% Match)</span>
+            
+            <!-- Other minor nodes -->
+            <div class="rag-node" style="top: 20%; left: 15%;"></div>
+            <div class="rag-node" style="top: 80%; left: 20%;"></div>
+            <div class="rag-node" style="top: 15%; left: 45%;"></div>
+            <div class="rag-node" style="top: 85%; left: 48%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Resilient Pauses -->
+      <div class="bento-card span-4 tilt-card">
+        <div class="bento-content">
+          <div class="bento-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+          </div>
+          <h3>Resilient Pauses</h3>
+          <p>Human-in-the-Loop technology. When the browser agent meets a complex CAPTCHA or 2FA challenge, the pipeline pauses, triggers a WhatsApp webhook alert, and resumes seamlessly after manual solving.</p>
+          
+          <!-- Warning CAPTCHA Alert Widget -->
+          <div class="warning-alert-box">
+            <div class="warning-header">
+              <span class="warning-indicator"></span>
+              <span class="warning-title">INTERVENTION REQUIRED</span>
+            </div>
+            <div class="warning-body">
+              <strong>Greenhouse ATS CAPTCHA</strong> detected during Stripe application session. Pipeline paused safely.
+            </div>
+            <a href="#" class="warning-btn" onclick="alert('CAPTCHA bypass simulation complete!'); return false;">Solve & Resume</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: ElevenLabs Voice -->
+      <div class="bento-card span-4 tilt-card">
+        <div class="bento-content">
+          <div class="bento-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+          </div>
+          <h3>ElevenLabs Voice</h3>
+          <p>Get real-time synthesized voice updates the second a recruiter matches your profile, opens your resume, or successfully submits an application.</p>
+          
+          <!-- Custom Audio Player Widget -->
+          <div class="audio-player-widget">
+            <div class="audio-play-btn" onclick="alert('Synthesizing recruiter intel memo...');">
+              <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M11.596 8.697l-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>
+            </div>
+            <div class="audio-wave">
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+            </div>
+          </div>
+          <p style="font-size: 0.75rem; font-style: italic; color: var(--color-slate); margin-top: 0.8rem;">"Recruiter at Stripe viewed your resume..."</p>
+        </div>
+      </div>
+
+      <!-- Card 4: Headless Browser Autonomy -->
+      <div class="bento-card span-8 tilt-card">
+        <div class="bento-content">
+          <div class="bento-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+          </div>
+          <h3>Headless Browser Autonomy</h3>
+          <p>Powered by Skyvern and Browser-Use. Our agents dynamically parse the DOM, auto-filling highly complex 5-page ATS forms without relying on a single static API endpoint.</p>
+          
+          <!-- Terminal Logs Visualizer -->
+          <div class="widget-terminal">
+            <div class="terminal-header">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+              <span class="terminal-title">python3 browser_agent.py</span>
+            </div>
+            <div class="terminal-body">
+              <div class="terminal-line"><span class="terminal-info">[INFO]</span> Launching Chromium Headless browser...</div>
+              <div class="terminal-line"><span class="terminal-info">[INFO]</span> Connected to Chrome profile 2 successfully.</div>
+              <div class="terminal-line"><span class="terminal-info">[INFO]</span> Navigating to: Greenhouse ATS (boards.greenhouse.io)</div>
+              <div class="terminal-line"><span class="terminal-info">[INFO]</span> Extracted 14 application fields. Mapping via OpenAI LLM...</div>
+              <div class="terminal-line"><span class="terminal-info">[INFO]</span> Autofilling: "Resume" -> uploading: chinmay_resume.pdf</div>
+              <div class="terminal-line"><span class="terminal-success">[SUCCESS]</span> Application submitted successfully! Twilio WhatsApp webhook fired.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Final CTA -->
+  <section class="cta-section">
+    <spline-viewer url="https://prod.spline.design/nOUBHkeBuytkOast/scene.splinecode" class="cta-spline"></spline-viewer>
+    <div class="cta-header-wrapper">
+      <h2>Ready to automate?</h2>
+      <p>Deploy your own Agent Zero and take back your time.</p>
+    </div>
+    <div class="cta-btn-wrapper">
+      <a href="#" class="magnetic-btn light" id="ctaBtn"><span>Launch FLUX</span></a>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer-logo">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="logo-icon" style="width: 24px; height: 24px; margin-right: 0;">
+          <svg class="logo-svg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 26V6H24" stroke="var(--color-white)" stroke-width="3.5" stroke-linecap="round" class="logo-p1"/>
+            <path d="M8 15H20" stroke="var(--color-white)" stroke-width="3.5" stroke-linecap="round" class="logo-p2"/>
+            <circle cx="8" cy="6" r="3.5" fill="var(--color-mint)" class="logo-dot"/>
+          </svg>
+        </div>
+        <span style="color: var(--color-white); font-weight: 800; font-size: 1.2rem; letter-spacing: -0.04em;">FLUX</span>
+      </div>
+    </div>
+    <div>Production Build v2.0</div>
+  </footer>
+
+  <script type="module" src="https://unpkg.com/@splinetool/viewer/build/spline-viewer.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.34/dist/lenis.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

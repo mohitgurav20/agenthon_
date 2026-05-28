@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How it Works — FLUX</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .page-header {
+      padding: 12rem 4vw 4rem;
+      text-align: center;
+    }
+    
+    .page-header h1 {
+      font-size: clamp(3.5rem, 7vw, 5.5rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      color: var(--color-charcoal);
+      margin-bottom: 1rem;
+    }
+    
+    .page-header p {
+      font-size: clamp(1.1rem, 2vw, 1.4rem);
+      max-width: 600px;
+      margin: 0 auto;
+      color: var(--color-slate);
+    }
+    
+    .timeline {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 2rem 4vw 8rem;
+      position: relative;
+    }
+    
+    /* Timeline connecting line */
+    .timeline::before {
+      content: '';
+      position: absolute;
+      top: 0; bottom: 0; left: 50px;
+      width: 2px;
+      background: linear-gradient(to bottom, var(--color-mint), var(--color-beige), transparent);
+      z-index: 1;
+    }
+    
+    .step {
+      display: flex;
+      gap: 3rem;
+      margin-bottom: 6rem;
+      opacity: 0;
+      transform: translateX(-50px);
+      position: relative;
+      z-index: 2;
+    }
+    
+    .step-number {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--color-charcoal);
+      background-color: var(--color-mint);
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      border: 4px solid var(--color-cream);
+      z-index: 3;
+    }
+    
+    .step-content {
+      background: var(--color-white);
+      padding: 3rem;
+      border-radius: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+      border: 1px solid rgba(116, 119, 123, 0.1);
+      width: 100%;
+      transform-style: preserve-3d;
+      will-change: transform;
+    }
+    
+    .step-content h3 {
+      font-size: 2.25rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: var(--color-charcoal);
+      letter-spacing: -0.03em;
+    }
+    
+    .step-content p {
+      font-size: 1.1rem;
+      color: var(--color-slate);
+      line-height: 1.7;
+      margin-bottom: 2rem;
+    }
+    
+    .step-tags {
+      display: flex;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+    }
+    
+    .tag {
+      background: rgba(116, 119, 123, 0.08);
+      padding: 0.5rem 1.2rem;
+      border-radius: 99px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--color-charcoal);
+      border: 1px solid rgba(116, 119, 123, 0.05);
+    }
+    
+    @media (max-width: 768px) {
+      .step {
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+      .timeline::before {
+        left: 35px;
+      }
+      .step-number {
+        width: 60px;
+        height: 60px;
+        font-size: 1.75rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Custom Cursor -->
+  <div class="custom-cursor" id="customCursor"></div>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <a href="index.html" class="logo-container">
+      <div class="logo-icon">
+        <svg class="logo-svg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M8 26V6H24" stroke="var(--color-charcoal)" stroke-width="3.5" stroke-linecap="round" class="logo-p1"/>
+          <path d="M8 15H20" stroke="var(--color-charcoal)" stroke-width="3.5" stroke-linecap="round" class="logo-p2"/>
+          <circle cx="8" cy="6" r="3.5" fill="var(--color-mint)" class="logo-dot"/>
+        </svg>
+      </div>
+      <span class="logo-text">FLUX</span>
+    </a>
+    <div class="nav-links">
+      <a href="features.html">Features</a>
+      <a href="how-it-works.html" style="color: var(--color-charcoal); font-weight: 600;">How it Works</a>
+      <a href="#" class="magnetic-btn" id="navBtn"><span>Launch FLUX</span></a>
+    </div>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <h1>Engine Protocol</h1>
+    <p>A step-by-step breakdown of how FLUX automates, secures, and tracks your job search.</p>
+  </div>
+
+  <!-- Timeline Section -->
+  <div class="timeline">
+    
+    <!-- Step 1 -->
+    <div class="step">
+      <div class="step-number">1</div>
+      <div class="step-content tilt-card">
+        <h3>Ingestion & Vectorization</h3>
+        <p>Your journey begins by uploading your unstructured resume (PDF/DOCX) and defining your exact target career parameters through our Conversational Copilot drawer. The system leverages advanced OpenAI embedding models to index your comprehensive skills and work experience into multi-dimensional vectors, saving them securely inside the Supabase pgvector store.</p>
+        <div class="step-tags">
+          <span class="tag">Supabase pgvector</span>
+          <span class="tag">OpenAI Embeddings</span>
+          <span class="tag">Zod Schema Validation</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step">
+      <div class="step-number">2</div>
+      <div class="step-content tilt-card">
+        <h3>Semantic Match Discovery</h3>
+        <p>The Orchestrator agent crawls corporate ATS boards and platforms (leveraging LinkedIn, Greenhouse, and Lever) on an automated schedule. Rather than relying on simple keyword filters, ResumeVault employs Reciprocal Rank Fusion (RRF) Hybrid Search to query job description vectors against your resume embeddings, ranking matches with true semantic context.</p>
+        <div class="step-tags">
+          <span class="tag">LinkedIn Fast Scraper</span>
+          <span class="tag">RRF Hybrid Search</span>
+          <span class="tag">Tavily Job Crawler</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step">
+      <div class="step-number">3</div>
+      <div class="step-content tilt-card">
+        <h3>Browser Engine Inception</h3>
+        <p>For high-scoring job positions, the browser launcher spins up a headless Chromium browser instance within a secure local sandbox. The Python browser-use agent mounts your local Chrome profile, natively logs into portals, dynamically analyzes form fields, and inputs your accurate details directly into the ATS database.</p>
+        <div class="step-tags">
+          <span class="tag">Browser-Use Agent</span>
+          <span class="tag">Headless Chromium</span>
+          <span class="tag">Local MCP Sandbox</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="step">
+      <div class="step-number">4</div>
+      <div class="step-content tilt-card">
+        <h3>Anti-Ban Security</h3>
+        <p>To protect candidate accounts from getting flagged by strict B2B job boards, ResumeVault structures all operations through mathematical Token-Bucket Rate Limiters. If the browser faces an advanced CAPTCHA or 2FA verification challenge, the system triggers a resilient pause, alerts you immediately via WhatsApp, and resumes instantly after you manual-solve.</p>
+        <div class="step-tags">
+          <span class="tag">Token-Bucket Limiter</span>
+          <span class="tag">Resilient Pauses</span>
+          <span class="tag">WhatsApp Webhooks</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 5 -->
+    <div class="step">
+      <div class="step-number">5</div>
+      <div class="step-content tilt-card">
+        <h3>Recruiter Intel Feedback</h3>
+        <p>Once an application is successfully submitted, you are updated instantly. Even better, when a corporate recruiter opens your file or updates your application status, Twilio webhook integration captures the state update, generating a realistic synthesized recruiter voice memo through ElevenLabs to brief you on-demand.</p>
+        <div class="step-tags">
+          <span class="tag">ElevenLabs TTS Voice</span>
+          <span class="tag">Twilio Integration</span>
+          <span class="tag">Real-time Dashboard Feedback</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Final CTA -->
+  <section class="cta-section">
+    <spline-viewer url="https://prod.spline.design/nOUBHkeBuytkOast/scene.splinecode" class="cta-spline"></spline-viewer>
+    <div class="cta-header-wrapper">
+      <h2>Ready to automate?</h2>
+      <p>Deploy your own Agent Zero and take back your time.</p>
+    </div>
+    <div class="cta-btn-wrapper">
+      <a href="#" class="magnetic-btn light" id="ctaBtn"><span>Launch FLUX</span></a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-logo">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="logo-icon" style="width: 24px; height: 24px; margin-right: 0;">
+          <svg class="logo-svg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 26V6H24" stroke="var(--color-white)" stroke-width="3.5" stroke-linecap="round" class="logo-p1"/>
+            <path d="M8 15H20" stroke="var(--color-white)" stroke-width="3.5" stroke-linecap="round" class="logo-p2"/>
+            <circle cx="8" cy="6" r="3.5" fill="var(--color-mint)" class="logo-dot"/>
+          </svg>
+        </div>
+        <span style="color: var(--color-white); font-weight: 800; font-size: 1.2rem; letter-spacing: -0.04em;">FLUX</span>
+      </div>
+    </div>
+    <div>Production Build v2.0</div>
+  </footer>
+
+  <!-- Scripts -->
+  <script type="module" src="https://unpkg.com/@splinetool/viewer/build/spline-viewer.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.34/dist/lenis.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
