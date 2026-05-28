@@ -329,19 +329,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         let foundUseless = false;
 
-        // NARROWED keyword list - only target known text/UI mockup labels in Spline
-        // IMPORTANT: avoid broad words like 'rect', 'link', 'frame', 'build', 'panel'
-        // which accidentally hide grid mesh geometry and make the whole scene invisible!
         app.scene.traverse((obj) => {
-          const name = obj.name ? obj.name.toLowerCase() : '';
+          // ONLY hide explicitly created Text objects, to prevent accidentally hiding the main background meshes
           const isUselessWording = 
-            name === 'text' ||
-            name.startsWith('button') ||
-            name.includes('we\'re building') ||
-            name.includes('cool experience') ||
-            name.includes('contact us') ||
-            name.includes('get started') ||
-            // Three.js TextGeometry objects
             (obj.geometry && obj.geometry.type === 'TextGeometry') ||
             (obj.geometry && obj.geometry.type === 'TextBufferGeometry');
 

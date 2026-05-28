@@ -457,18 +457,15 @@ p {
 }
 
 .cta-spline {
-  /* Real fix: give the WebGL canvas a physically larger area (200vw × 200vh)
-     so Three.js/WebGL renders MORE of the 3D scene, giving true corner-to-corner
-     coverage. No CSS bitmap scaling - the 3D scene natively fills all edges. */
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 200vw !important;
-  height: 200vh !important;
-  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  transform: translate(-50%, -50%) scale(3.5);
   transform-origin: center center;
   z-index: 1;
-  display: block !important;
+  pointer-events: none;
 }
 
 .cta-header-wrapper {
