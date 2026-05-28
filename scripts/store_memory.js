@@ -8,19 +8,25 @@ const client = new MemoryClient({ apiKey: process.env.MEM0_API_KEY });
  * Stores a memory into Mem0
  * @param {string} text - The user's message/text to extract facts from
  * @param {string} userId - The user ID
+ * @param {string} [cluster] - Optional tagged memory cluster (e.g. 'user-preferences', 'teammate-facts')
  */
-async function storeMemory(text, userId) {
+async function storeMemory(text, userId, cluster) {
     if (!text || !userId) {
         console.error("Missing text or userId.");
         return;
     }
 
     try {
-        console.log(`Storing memory for user ${userId}...`);
+        console.log(`Storing memory for user ${userId}${cluster ? ` [Cluster: ${cluster}]` : ''}...`);
         const messages = [{ role: 'user', content: text }];
         
+        const options = { user_id: userId };
+        if (cluster) {
+            options.metadata = { cluster: cluster };
+        }
+
         // Mem0 automatically extracts facts and stores them
-        const result = await client.add(messages, { user_id: userId });
+        const result = await client.add(messages, options);
         
         console.log("Memory successfully stored.");
         console.log(JSON.stringify(result, null, 2));

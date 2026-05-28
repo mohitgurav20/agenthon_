@@ -11,7 +11,8 @@
     "dev": "npm run start:all",
     "test": "node test_orchestrator.js",
     "test:tools": "node test_tools.js",
-    "test:e2e": "jest tests/tools.test.js"
+    "test:e2e": "jest tests/tools.test.js",
+    "db:setup": "node supabase/migrate.js"
   },
   "keywords": [
     "ai",

@@ -79,8 +79,63 @@ async function runProductionTests() {
             throw new Error("Invalid response schema from /memory/deduplicate");
         }
 
-        // 3. Test Endpoint: Reset / Purge
-        console.log("\n🧪 [Test 3/3] POST /memory/reset");
+        // 3. Test Endpoint: Mem0 Multi-User Profile Clustering
+        console.log("\n🧪 [Test 3/4] POST /memory/store & /memory/retrieve (Profile Clustering)");
+        
+        console.log("Storing fact into '#user-preferences' cluster...");
+        const storePrefRes = await fetch(`${BASE_URL}/memory/store`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                text: "Mohit Gurav prefers high-contrast dark theme UI layouts.",
+                userId: "agent-zero-cluster-test",
+                cluster: "user-preferences"
+            })
+        });
+        if (!storePrefRes.ok) throw new Error("Failed to store preference memory.");
+        
+        console.log("Storing fact into '#teammate-facts' cluster...");
+        const storeTeammateRes = await fetch(`${BASE_URL}/memory/store`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                text: "Mohit Gurav is the primary team lead.",
+                userId: "agent-zero-cluster-test",
+                cluster: "teammate-facts"
+            })
+        });
+        if (!storeTeammateRes.ok) throw new Error("Failed to store teammate memory.");
+
+        console.log("Querying memories strictly scoped to 'user-preferences'...");
+        const retrievePrefRes = await fetch(`${BASE_URL}/memory/retrieve`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                query: "Mohit Gurav",
+                userId: "agent-zero-cluster-test",
+                cluster: "user-preferences"
+            })
+        });
+        if (!retrievePrefRes.ok) throw new Error("Failed to retrieve scoped preference memories.");
+        const prefData = await retrievePrefRes.json();
+        console.log("Scoped 'user-preferences' results:", JSON.stringify(prefData, null, 2));
+
+        console.log("Querying memories strictly scoped to 'teammate-facts'...");
+        const retrieveTeammateRes = await fetch(`${BASE_URL}/memory/retrieve`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                query: "Mohit Gurav",
+                userId: "agent-zero-cluster-test",
+                cluster: "teammate-facts"
+            })
+        });
+        if (!retrieveTeammateRes.ok) throw new Error("Failed to retrieve scoped teammate memories.");
+        const teammateData = await retrieveTeammateRes.json();
+        console.log("Scoped 'teammate-facts' results:", JSON.stringify(teammateData, null, 2));
+
+        // 4. Test Endpoint: Reset / Purge
+        console.log("\n🧪 [Test 4/4] POST /memory/reset");
         const resetRes = await fetch(`${BASE_URL}/memory/reset`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

@@ -67,15 +67,21 @@ async function deduplicateUserMemories(userId) {
     }
 
     try {
-        // 1. Fetch user memories using a broad preference query
-        console.log("Querying memories from Mem0 server...");
-        // Since mem0ai search requires a query, we search for broad terms to fetch profile facts
-        const searchResult = await mem0Client.search("preferences name identity", { 
-            filters: { user_id: userId },
-            limit: 20
-        });
-
-        const memories = searchResult.results || searchResult || [];
+        let memories = [];
+        try {
+            console.log("Querying all user memories from Mem0 via getAll()...");
+            const allResult = await mem0Client.getAll({
+                filters: { user_id: userId }
+            });
+            memories = allResult.results || allResult || [];
+        } catch (getAllError) {
+            console.warn("⚠️ mem0Client.getAll() failed or unsupported. Falling back to broad semantic search queries...", getAllError.message);
+            const searchResult = await mem0Client.search("preferences name identity core values skills project experience work background", { 
+                filters: { user_id: userId },
+                limit: 100
+            });
+            memories = searchResult.results || searchResult || [];
+        }
         if (memories.length === 0) {
             console.log("No memories found for user. Nothing to deduplicate.");
             return { success: true, beforeCount: 0, afterCount: 0 };

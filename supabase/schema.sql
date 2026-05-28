@@ -114,10 +114,10 @@ BEGIN
             d.id,
             d.content,
             d.metadata,
-            ts_rank_cd(to_tsvector('english', d.content), plainto_tsquery('english', query_text)) AS keyword_score,
-            ROW_NUMBER() OVER (ORDER BY ts_rank_cd(to_tsvector('english', d.content), plainto_tsquery('english', query_text)) DESC) AS rank
+            ts_rank_cd(to_tsvector('english', d.content), websearch_to_tsquery('english', query_text)) AS keyword_score,
+            ROW_NUMBER() OVER (ORDER BY ts_rank_cd(to_tsvector('english', d.content), websearch_to_tsquery('english', query_text)) DESC) AS rank
         FROM documents d
-        WHERE to_tsvector('english', d.content) @@ plainto_tsquery('english', query_text)
+        WHERE to_tsvector('english', d.content) @@ websearch_to_tsquery('english', query_text)
     )
     SELECT
         COALESCE(s.id, k.id) AS id,
@@ -134,3 +134,37 @@ BEGIN
     LIMIT match_count;
 END;
 $$;
+
+-- Set replica identity to full for comprehensive real-time streaming
+ALTER TABLE tool_logs REPLICA IDENTITY FULL;
+ALTER TABLE agent_outputs REPLICA IDENTITY FULL;
+
+-- Safely ensure the publication exists and register the telemetry tables
+DO $$
+BEGIN
+    -- Create publication if not exists (for generic Postgres/local testing environments)
+    IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+        CREATE PUBLICATION supabase_realtime;
+    END IF;
+
+    -- Register agent_outputs to the publication
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_rel pr 
+        JOIN pg_class c ON pr.prrelid = c.oid 
+        JOIN pg_publication p ON pr.prpubid = p.oid 
+        WHERE p.pubname = 'supabase_realtime' AND c.relname = 'agent_outputs'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE agent_outputs;
+    END IF;
+
+    -- Register tool_logs to the publication
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_rel pr 
+        JOIN pg_class c ON pr.prrelid = c.oid 
+        JOIN pg_publication p ON pr.prpubid = p.oid 
+        WHERE p.pubname = 'supabase_realtime' AND c.relname = 'tool_logs'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE tool_logs;
+    END IF;
+END $$;
+

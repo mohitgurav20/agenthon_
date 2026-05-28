@@ -6,20 +6,21 @@ const { searchKnowledgeBase } = require('./rag_pipeline');
  * Builds the combined context by executing Mem0 and Supabase RAG in parallel
  * @param {string} query - The user's query
  * @param {string} userId - The user ID
+ * @param {string} [cluster] - Optional memory cluster filter (e.g. 'user-preferences')
  * @returns {Promise<string>} The formatted context string
  */
-async function buildContext(query, userId) {
+async function buildContext(query, userId, cluster) {
     if (!query || !userId) {
         console.error("Missing query or userId.");
         return "";
     }
 
-    console.log(`Building combined context for user ${userId}...`);
+    console.log(`Building combined context for user ${userId}${cluster ? ` [Cluster: ${cluster}]` : ''}...`);
     
     try {
         // Run both retrievals in parallel
         const [memories, knowledgeBaseDocs] = await Promise.all([
-            retrieveMemory(query, userId),
+            retrieveMemory(query, userId, cluster),
             searchKnowledgeBase(query)
         ]);
 
