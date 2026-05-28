@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { CopilotChat } from '@copilotkit/react-ui';
 import { createClient } from '@/utils/supabase/client';
+import CareerCockpit from '@/components/CareerCockpit';
+import RagDrawer from '@/components/RagDrawer';
 
 type AgentOutputEvent = Record<string, unknown> & {
   timestamp?: string | number;
@@ -14,6 +16,8 @@ type AgentOutputEvent = Record<string, unknown> & {
 
 export default function DashboardPage() {
   const [liveEvents, setLiveEvents] = useState<AgentOutputEvent[]>([]);
+  const [chatMode, setChatMode] = useState<'copilot' | 'cockpit'>('copilot');
+  const [ragOpen, setRagOpen] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
@@ -51,7 +55,12 @@ export default function DashboardPage() {
           </div>
           <h1 className="font-bold tracking-wider gradient-text">AGENT ZERO</h1>
         </div>
-        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => setRagOpen(true)}
+            className="px-3 py-1 text-xs font-mono rounded bg-secondary/20 text-secondary border border-secondary/30 hover:bg-secondary/30 transition-colors"
+          >
+            🔍 RAG Explorer
+          </button>
           <div className="px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
             <span className="text-xs font-mono text-green-400">System Online</span>
@@ -109,22 +118,46 @@ export default function DashboardPage() {
           }} />
           
           <div className="flex-1 overflow-hidden flex flex-col z-10 p-6">
-            <div className="bg-surface/90 backdrop-blur-md border border-border rounded-2xl overflow-hidden h-full shadow-[0_0_30px_rgba(124,58,237,0.15)] flex flex-col">
-              {/* CopilotKit Chat UI Wrapper to make it look native */}
-              <div className="flex-1 relative copilot-custom-wrapper">
-                <CopilotChat
-                  instructions="You are Agent Zero, an advanced Orchestrator Agent. Provide concise, professional responses. You have access to Supabase memory, Tavily search, and browser automation tools."
-                  labels={{
-                    title: "Orchestrator Agent",
-                    initial: "Initializing sequence complete. All systems online. Awaiting command...",
-                  }}
-                />
+            
+            {/* Mode Toggle */}
+            <div className="flex justify-center mb-6">
+              <div className="bg-black/40 border border-border rounded-full p-1 flex gap-1">
+                <button 
+                  onClick={() => setChatMode('copilot')}
+                  className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${chatMode === 'copilot' ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                >
+                  Agent Chat
+                </button>
+                <button 
+                  onClick={() => setChatMode('cockpit')}
+                  className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${chatMode === 'cockpit' ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                >
+                  Career Cockpit
+                </button>
               </div>
+            </div>
+
+            <div className="bg-surface/90 backdrop-blur-md border border-border rounded-2xl overflow-hidden h-full shadow-[0_0_30px_rgba(124,58,237,0.15)] flex flex-col">
+              {chatMode === 'copilot' ? (
+                <div className="flex-1 relative copilot-custom-wrapper">
+                  <CopilotChat
+                    instructions="You are Agent Zero, an advanced Orchestrator Agent. Provide concise, professional responses. You have access to Supabase memory, Tavily search, and browser automation tools."
+                    labels={{
+                      title: "Orchestrator Agent",
+                      initial: "Initializing sequence complete. All systems online. Awaiting command...",
+                    }}
+                  />
+                </div>
+              ) : (
+                <CareerCockpit />
+              )}
             </div>
           </div>
         </section>
 
       </main>
+
+      <RagDrawer isOpen={ragOpen} onClose={() => setRagOpen(false)} />
     </div>
   );
 }
