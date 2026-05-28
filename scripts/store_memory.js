@@ -4,11 +4,45 @@ const { MemoryClient } = require('mem0ai');
 // Initialize Mem0 Client
 const client = new MemoryClient({ apiKey: process.env.MEM0_API_KEY });
 
+// In-memory queue to batch episodic events aggressively
+const batchQueue = new Map(); // Map<userId, Map<cluster, Array<string>>>
+const flushTimeouts = new Map(); // Map<timeoutKey, NodeJS.Timeout>
+const BATCH_FLUSH_DELAY_MS = 2000;
+
+async function flushMemoryBatch(userId, cluster) {
+    const clusterKey = cluster || 'default';
+    const texts = batchQueue.get(userId)?.get(clusterKey);
+    
+    if (!texts || texts.length === 0) return null;
+    
+    // Isolate and capture the payload, clear the queue for the next batch
+    const payload = [...texts];
+    batchQueue.get(userId).set(clusterKey, []);
+    
+    try {
+        console.log(`[Mem0 Batch] Flushing ${payload.length} events for user ${userId}${cluster ? ` [Cluster: ${cluster}]` : ''}...`);
+        
+        const messages = payload.map(text => ({ role: 'user', content: text }));
+        const options = { user_id: userId };
+        if (cluster) {
+            options.metadata = { cluster: cluster };
+        }
+
+        const result = await client.add(messages, options);
+        console.log(`[Mem0 Batch] ✅ Successfully isolated and stored ${payload.length} global events.`);
+        return result;
+    } catch (error) {
+        console.error(`[Mem0 Batch] ❌ Error flushing memory batch for user ${userId}:`, error.message);
+        throw error;
+    }
+}
+
 /**
- * Stores a memory into Mem0
+ * Stores a memory into Mem0 using aggressive batching to prevent API throttling
+ * and securely isolate events globally per user.
  * @param {string} text - The user's message/text to extract facts from
  * @param {string} userId - The user ID
- * @param {string} [cluster] - Optional tagged memory cluster (e.g. 'user-preferences', 'teammate-facts')
+ * @param {string} [cluster] - Optional tagged memory cluster (e.g. 'user-preferences')
  */
 async function storeMemory(text, userId, cluster) {
     if (!text || !userId) {
@@ -16,25 +50,36 @@ async function storeMemory(text, userId, cluster) {
         return;
     }
 
-    try {
-        console.log(`Storing memory for user ${userId}${cluster ? ` [Cluster: ${cluster}]` : ''}...`);
-        const messages = [{ role: 'user', content: text }];
-        
-        const options = { user_id: userId };
-        if (cluster) {
-            options.metadata = { cluster: cluster };
-        }
+    const clusterKey = cluster || 'default';
+    
+    // Ensure nested maps exist
+    if (!batchQueue.has(userId)) batchQueue.set(userId, new Map());
+    if (!batchQueue.get(userId).has(clusterKey)) batchQueue.get(userId).set(clusterKey, []);
+    
+    batchQueue.get(userId).get(clusterKey).push(text);
+    console.log(`[Mem0 Batch] Queueing event for user ${userId} -> "${text.substring(0, 30)}..."`);
 
-        // Mem0 automatically extracts facts and stores them
-        const result = await client.add(messages, options);
-        
-        console.log("Memory successfully stored.");
-        console.log(JSON.stringify(result, null, 2));
-        return result;
-    } catch (error) {
-        console.error("Error storing memory:", error);
-        throw error;
+    const timeoutKey = `${userId}:${clusterKey}`;
+    
+    // Clear the existing debounce timeout
+    if (flushTimeouts.has(timeoutKey)) {
+        clearTimeout(flushTimeouts.get(timeoutKey));
     }
+
+    // Return a promise that resolves when the batch is flushed
+    return new Promise((resolve, reject) => {
+        const timeout = setTimeout(async () => {
+            flushTimeouts.delete(timeoutKey);
+            try {
+                const res = await flushMemoryBatch(userId, cluster);
+                resolve(res);
+            } catch (err) {
+                reject(err);
+            }
+        }, BATCH_FLUSH_DELAY_MS);
+        
+        flushTimeouts.set(timeoutKey, timeout);
+    });
 }
 
 // Allow script execution from CLI

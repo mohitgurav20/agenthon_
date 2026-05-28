@@ -168,3 +168,26 @@ BEGIN
     END IF;
 END $$;
 
+-- ═══════════════════════════════════════════════════════════════
+--  Real-time pg_notify Triggers for WebSocket Server
+-- ═══════════════════════════════════════════════════════════════
+CREATE OR REPLACE FUNCTION notify_agent_output()
+RETURNS TRIGGER AS $$
+BEGIN
+    PERFORM pg_notify(
+        'agent_events',
+        json_build_object(
+            'table', TG_TABLE_NAME,
+            'action', TG_OP,
+            'data', row_to_json(NEW)
+        )::text
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_notify_agent_output ON agent_outputs;
+CREATE TRIGGER trg_notify_agent_output
+AFTER INSERT OR UPDATE ON agent_outputs
+FOR EACH ROW EXECUTE FUNCTION notify_agent_output();
+

@@ -13,12 +13,12 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 /**
  * Searches the Supabase documents table using RAG / Vector similarity or Hybrid Search
  * @param {string} query - The search query
- * @param {number} matchThreshold - Minimum similarity threshold (e.g., 0.5)
+ * @param {number} matchThreshold - Minimum similarity threshold (e.g., 0.85)
  * @param {number} matchCount - Max number of chunks to return
  * @param {string} searchType - Search strategy: 'semantic' (default) or 'hybrid'
  * @returns {Promise<Array>} List of relevant document chunks
  */
-async function searchKnowledgeBase(query, matchThreshold = 0.5, matchCount = 5, searchType = 'hybrid') {
+async function searchKnowledgeBase(query, matchThreshold = 0.85, matchCount = 5, searchType = 'hybrid') {
     if (!query) {
         console.error("Missing query for RAG search.");
         return [];
@@ -95,7 +95,7 @@ if (require.main === module) {
     const query = args[0] || "What is the capital of France?";
     const type = args[1] || "hybrid";
     
-    searchKnowledgeBase(query, 0.3, 5, type).then(results => {
+    searchKnowledgeBase(query, 0.85, 5, type).then(results => {
         console.log(JSON.stringify(results, null, 2));
     });
 }
@@ -111,14 +111,14 @@ if (require.main === module) {
  *
  * @param {string} query - Natural language search query
  * @param {Object} [options] - Search options
- * @param {number} [options.matchThreshold=0.3] - Minimum cosine similarity
+ * @param {number} [options.matchThreshold=0.85] - Minimum cosine similarity
  * @param {number} [options.matchCount=5] - Max results to return
  * @param {number} [options.rrfK=60] - RRF constant (higher = more weight on keyword)
  * @returns {Promise<Array<{id, content, metadata, similarity, rrf_score}>>}
  */
 async function searchHybridWithScoring(query, options = {}) {
     const {
-        matchThreshold = 0.3,
+        matchThreshold = 0.85,
         matchCount = 5,
         rrfK = 60
     } = options;
@@ -177,15 +177,15 @@ async function searchWithFallbackChain(query, matchCount = 5) {
 
     // Strategy 1: Hybrid RRF
     console.log(`[FallbackChain] Trying HYBRID search...`);
-    const hybridResults = await searchKnowledgeBase(query, 0.2, matchCount, 'hybrid');
+    const hybridResults = await searchKnowledgeBase(query, 0.85, matchCount, 'hybrid');
     if (hybridResults && hybridResults.length > 0) {
         console.log(`[FallbackChain] ✅ Hybrid returned ${hybridResults.length} results.`);
         return { results: formatRagResults(hybridResults, 'hybrid'), strategy: 'hybrid' };
     }
 
-    // Strategy 2: Pure semantic vector search (lower threshold)
+    // Strategy 2: Pure semantic vector search (lower threshold but still strict)
     console.log(`[FallbackChain] Hybrid empty. Trying SEMANTIC search...`);
-    const semanticResults = await searchKnowledgeBase(query, 0.15, matchCount, 'semantic');
+    const semanticResults = await searchKnowledgeBase(query, 0.75, matchCount, 'semantic');
     if (semanticResults && semanticResults.length > 0) {
         console.log(`[FallbackChain] ✅ Semantic returned ${semanticResults.length} results.`);
         return { results: formatRagResults(semanticResults, 'semantic'), strategy: 'semantic' };
