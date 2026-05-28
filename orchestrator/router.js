@@ -49,7 +49,7 @@ let dynamicModels = {
   router: 'fast',       // default to fast (groq-llama)
   research: 'flash',    // default to flash (gemini-flash)
   action: 'deep',       // default to deep (gemini-pro)
-  validator: 'validation' // default to validation (claude-validation)
+  validator: 'deep' // default to deep (gemini-pro)
 };
 
 function getActiveModels() {

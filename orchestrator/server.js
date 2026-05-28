@@ -37,6 +37,13 @@ app.use(express.json());
 const path = require('path');
 app.use(express.static(path.join(__dirname, '../public')));
 
+// Integrate all backend services into one unified port for maximum speed
+const toolsApi = require('../server');
+const memoryApi = require('../memory/memory_api');
+
+app.use('/', toolsApi);
+app.use('/', memoryApi);
+
 // ── Diagnostics Health Check ──
 app.get('/api/health', async (req, res) => {
   const startTime = Date.now();
@@ -68,9 +75,10 @@ app.get('/api/health', async (req, res) => {
   }
 
   // Run all health pings in parallel
+  // Since we merged everything into one port, we check internal services on the same port!
   const [toolsHealth, memoryHealth, dbHealth] = await Promise.all([
-    pingService(`${TOOLS_API}/api/health`),
-    pingService(`${MEMORY_API}/memory/store`).then(r => ({ ...r, note: 'ping only' })).catch(() => ({ status: 'offline', latencyMs: 0 })),
+    pingService(`http://localhost:${PORT}/api/tools/health`),
+    pingService(`http://localhost:${PORT}/memory/store`).then(r => ({ ...r, note: 'ping only' })).catch(() => ({ status: 'offline', latencyMs: 0 })),
     pingDatabase()
   ]);
 

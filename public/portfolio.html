@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>💎 Portfolio — Autonomous AI Engineer Profile</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
+
+    :root {
+      --bg: #050508;
+      --card-bg: #0c0c14;
+      --border: #141424;
+      --border-hover: #22223a;
+      --primary: #7c3aed;
+      --secondary: #06b6d4;
+      --accent: #10b981;
+      --text: #f8fafc;
+      --muted: #64748b;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      padding: 60px 20px;
+      line-height: 1.6;
+    }
+
+    /* Grid overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: 
+        linear-gradient(rgba(124, 58, 237, 0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(124, 58, 237, 0.015) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrap {
+      max-width: 850px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Hero */
+    header {
+      padding: 40px 0 60px;
+      position: relative;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 40px;
+    }
+
+    .hero-glow {
+      position: absolute;
+      top: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 500px;
+      height: 250px;
+      background: radial-gradient(ellipse, rgba(124, 58, 237, 0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--secondary);
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 800;
+      letter-spacing: -2px;
+      line-height: 1.1;
+      background: linear-gradient(135deg, #fff 0%, #c084fc 50%, #22d3ee 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 16px;
+    }
+
+    .title {
+      font-size: 18px;
+      font-weight: 500;
+      color: #e2e8f0;
+      margin-bottom: 24px;
+    }
+
+    .badge-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .badge {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .badge.active {
+      border-color: var(--primary);
+      color: #c4b5fd;
+      background: rgba(124, 58, 237, 0.08);
+    }
+
+    /* Sections */
+    section {
+      margin-bottom: 50px;
+    }
+
+    h2 {
+      font-size: 14px;
+      font-family: 'Space Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--secondary);
+      margin-bottom: 24px;
+      border-bottom: 1px dashed var(--border);
+      padding-bottom: 8px;
+    }
+
+    /* Cards */
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    .card:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .card-desc {
+      font-size: 13px;
+      color: #94a3b8;
+      line-height: 1.6;
+    }
+
+    /* Interactive Terminal */
+    .terminal-container {
+      background: #040406;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 45px rgba(0,0,0,0.6);
+    }
+
+    .terminal-header {
+      background: #09090e;
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .terminal-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .dot.red { background: #ef4444; }
+    .dot.yellow { background: #eab308; }
+    .dot.green { background: #22c55e; }
+
+    .terminal-title {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .terminal-body {
+      padding: 20px;
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      color: var(--accent);
+      min-height: 220px;
+      max-height: 350px;
+      overflow-y: auto;
+      line-height: 1.6;
+    }
+
+    .terminal-welcome {
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    .terminal-output {
+      margin-bottom: 10px;
+      white-space: pre-wrap;
+    }
+
+    .terminal-prompt-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .terminal-prompt {
+      color: var(--secondary);
+    }
+
+    .terminal-input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #fff;
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      flex-of: 1;
+      flex: 1;
+    }
+
+    /* Print settings */
+    @media print {
+      body {
+        background: #fff !important;
+        color: #000 !important;
+        padding: 0 !important;
+      }
+      body::before { display: none !important; }
+      .hero-glow { display: none !important; }
+      .terminal-container { display: none !important; }
+      h2 { border-bottom: 2px solid #000 !important; color: #000 !important; }
+      .card {
+        background: #fff !important;
+        border: 1px solid #cbd5e1 !important;
+        box-shadow: none !important;
+        color: #000 !important;
+        page-break-inside: avoid;
+      }
+      .card-title { color: #000 !important; }
+      .card-desc { color: #334155 !important; }
+      .badge { border: 1.5px solid #000 !important; color: #000 !important; background: none !important; }
+      h1 {
+        background: none !important;
+        -webkit-text-fill-color: #000 !important;
+        color: #000 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero-glow"></div>
+  <header>
+    <div class="eyebrow">Universal Portfolio</div>
+    <h1>SHREY SHARMA</h1>
+    <div class="title">Autonomous Systems & Full-Stack AI Engineer</div>
+    <div class="badge-grid">
+      <span class="badge active">React</span>
+      <span class="badge active">Node.js</span>
+      <span class="badge active">TypeScript</span>
+      <span class="badge active">Supabase</span>
+      <span class="badge active">Git</span>
+    </div>
+  </header>
+
+  <!-- TIMELINE -->
+  <section>
+    <h2>💼 Stateful Career Database (Retrieved from Mem0)</h2>
+    <div class="timeline">
+      
+      <div class="card">
+        <div class="card-title">User's name is Mohit.</div>
+        <div class="card-desc">User's name is Mohit.</div>
+      </div>
+      
+      
+      <div class="card">
+        <div class="card-title">User prefers to have meetings scheduled in the morning.</div>
+        <div class="card-desc">User prefers to have meetings scheduled in the morning.</div>
+      </div>
+      
+    </div>
+  </section>
+
+  <!-- INTERACTIVE CLI TERMINAL -->
+  <section>
+    <h2>💻 Interactive Career Console</h2>
+    <div class="terminal-container">
+      <div class="terminal-header">
+        <div class="terminal-dots">
+          <div class="dot red"></div>
+          <div class="dot yellow"></div>
+          <div class="dot green"></div>
+        </div>
+        <span class="terminal-title">career-shell v2.0.0</span>
+      </div>
+      <div class="terminal-body" id="term-body">
+        <div class="terminal-welcome">
+          ResumeVault AI autonomous shell loaded.<br>
+          Type <strong style="color: #fff">'help'</strong> to see available console actions.
+        </div>
+        <div id="term-log"></div>
+        <div class="terminal-prompt-line">
+          <span class="terminal-prompt">candidate@resumevault:~$</span>
+          <input type="text" class="terminal-input" id="term-in" autofocus onkeydown="handleInput(event)">
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  const logDiv = document.getElementById('term-log');
+  const termBody = document.getElementById('term-body');
+  const inputEl = document.getElementById('term-in');
+
+  const skillsList = ["React","Node.js","TypeScript","Supabase","Git"];
+  const factsList = ["User's name is Mohit.","User prefers to have meetings scheduled in the morning."];
+
+  function handleInput(e) {
+    if (e.key === 'Enter') {
+      const val = inputEl.value.trim().toLowerCase();
+      inputEl.value = '';
+
+      // Log command
+      const cmdLine = document.createElement('div');
+      cmdLine.innerHTML = `<span class="terminal-prompt">candidate@resumevault:~$</span> <span style="color: #fff">${val}</span>`;
+      logDiv.appendChild(cmdLine);
+
+      const respLine = document.createElement('div');
+      respLine.className = 'terminal-output';
+
+      switch (val) {
+        case 'help':
+          respLine.innerHTML = `Available commands:
+  <strong>skills</strong>   - Display core programming expertise
+  <strong>timeline</strong> - Print episodic milestones from Mem0
+  <strong>clear</strong>    - Clear the terminal console
+  <strong>contact</strong>  - Display candidate coordinates`;
+          break;
+        case 'skills':
+          respLine.innerHTML = `Parsed Tech Stack: \n${skillsList.map(s => '  - ' + s).join('\n')}`;
+          break;
+        case 'timeline':
+          respLine.innerHTML = `Autonomous Milestones: \n${factsList.map((f, i) => '  [' + (i+1) + '] ' + f).join('\n')}`;
+          break;
+        case 'contact':
+          respLine.innerHTML = `Candidate Coordinate Channels:
+  Email:   shreyaskalasa18@gmail.com
+  GitHub:  github.com/shrey
+  Status:  Ready for Live Corporate Interviews`;
+          break;
+        case 'clear':
+          logDiv.innerHTML = '';
+          respLine.innerHTML = '';
+          break;
+        default:
+          respLine.innerHTML = `Command not recognized: '${val}'. Type 'help' for instructions.`;
+      }
+
+      if (respLine.innerHTML) {
+        logDiv.appendChild(respLine);
+      }
+
+      // Scroll to bottom
+      termBody.scrollTop = termBody.scrollHeight;
+    }
+  }
+
+  // Refocus terminal
+  document.addEventListener('click', () => {
+    inputEl.focus();
+  });
+</script>
+</body>
+</html>

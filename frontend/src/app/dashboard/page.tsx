@@ -59,6 +59,25 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState('');
   
+  // Visual Recruiter Subtitle Overlay state
+  const [recruiterSubtitle, setRecruiterSubtitle] = useState('');
+  const [subtitleActive, setSubtitleActive] = useState(false);
+
+  const streamSubtitle = (text: string) => {
+    setRecruiterSubtitle('');
+    setSubtitleActive(true);
+    let i = 0;
+    const cleanText = text.replace(/[*#]/g, ''); // strip markdown
+    const interval = setInterval(() => {
+      setRecruiterSubtitle(cleanText.substring(0, i));
+      i++;
+      if (i > cleanText.length) {
+        clearInterval(interval);
+        setTimeout(() => setSubtitleActive(false), 4000);
+      }
+    }, 40);
+  };
+  
   // Real-time metrics of the latest response
   const [latestMetrics, setLatestMetrics] = useState<{
     totalMs?: number;
@@ -206,7 +225,7 @@ export default function DashboardPage() {
     setGapAnalyzing(true);
     setGapResult(null);
     try {
-      const res = await fetch('http://localhost:3002/api/skills/gap-analysis', {
+      const res = await fetch('/api/skills/gap-analysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jobDescription: gapJd, userId: 'agent-zero-user' })
@@ -251,7 +270,7 @@ export default function DashboardPage() {
   const handleRagSearch = async (q = ragQuery) => {
     setRagSearching(true);
     try {
-      const res = await fetch('http://localhost:3002/api/rag/search', {
+      const res = await fetch('/api/rag/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: q, limit: 8 })
@@ -288,7 +307,7 @@ export default function DashboardPage() {
   const handleResumeExport = async () => {
     setExportingResume(true);
     try {
-      const res = await fetch('http://localhost:3002/api/resume/export', {
+      const res = await fetch('/api/resume/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: 'agent-zero-user', company: exportCompany || 'Target Company', jobTitle: 'Software Engineer' })
@@ -305,7 +324,7 @@ export default function DashboardPage() {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         // Auto-save version
-        await fetch('http://localhost:3002/api/resume/save-version', {
+        await fetch('/api/resume/save-version', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ company: exportCompany || 'Target Company', atsScore: atsMetrics.atsScore })
@@ -346,7 +365,7 @@ export default function DashboardPage() {
         const idx = order.indexOf(app?.status || 'applied');
         return order[Math.min(idx + 1, order.length - 1)];
       })();
-      await fetch(`http://localhost:3002/api/applications/${id}`, {
+      await fetch(`/api/applications/${id}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: next })
       });
@@ -366,7 +385,7 @@ export default function DashboardPage() {
   const loadVersionHistory = async () => {
     if (versionsLoaded) return;
     try {
-      const res = await fetch('http://localhost:3002/api/resume/versions');
+      const res = await fetch('/api/resume/versions');
       if (res.ok) {
         const data = await res.json();
         if (data.versions && data.versions.length > 0) setResumeVersionsList(data.versions);
@@ -378,7 +397,7 @@ export default function DashboardPage() {
   const handleGeneratePortfolio = async () => {
     setGeneratingPortfolio(true);
     try {
-      const res = await fetch('http://localhost:3002/api/portfolio/generate?userId=agent-zero-user');
+      const res = await fetch('/api/portfolio/generate?userId=agent-zero-user');
       if (res.ok) {
         const data = await res.json();
         setPortfolioLink(data.filePath);
@@ -397,7 +416,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchActiveModels = async () => {
       try {
-        const res = await fetch('http://localhost:3002/api/models/active');
+        const res = await fetch('/api/models/active');
         if (res.ok) {
           const data = await res.json();
           setActiveModels(data);
@@ -409,7 +428,7 @@ export default function DashboardPage() {
 
     const fetchMilestones = async () => {
       try {
-        const res = await fetch('http://localhost:3002/api/profile/milestones?userId=agent-zero-user');
+        const res = await fetch('/api/profile/milestones?userId=agent-zero-user');
         if (res.ok) {
           const data = await res.json();
           setCareerTimeline(data);
@@ -421,7 +440,7 @@ export default function DashboardPage() {
 
     const fetchFunnelData = async () => {
       try {
-        const res = await fetch('http://localhost:3002/api/analytics/funnel');
+        const res = await fetch('/api/analytics/funnel');
         if (res.ok) {
           const data = await res.json();
           setFunnelData(data);
@@ -440,7 +459,7 @@ export default function DashboardPage() {
     const updated = { ...activeModels, [agent]: modelVal };
     setActiveModels(updated);
     try {
-      await fetch('http://localhost:3002/api/models/active', {
+      await fetch('/api/models/active', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updated)
@@ -542,7 +561,7 @@ export default function DashboardPage() {
     ]);
     
     try {
-      const res = await fetch('http://localhost:3002/api/a2a', {
+      const res = await fetch('/api/a2a', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestFrame)
@@ -568,7 +587,7 @@ export default function DashboardPage() {
     setSandboxLogs([`[system] Provisioning secure local container node sandbox...`]);
     
     try {
-      const res = await fetch('http://localhost:3002/api/orchestrate', {
+      const res = await fetch('/api/orchestrate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -640,7 +659,7 @@ export default function DashboardPage() {
     }, 1200);
 
     try {
-      const response = await fetch('http://localhost:3002/api/orchestrate', {
+      const response = await fetch('/api/orchestrate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -669,6 +688,7 @@ export default function DashboardPage() {
       };
 
       setMessages(prev => [...prev, assistantMsg]);
+      if (data.response) streamSubtitle(data.response);
       setLatestMetrics({
         totalMs: data.performance?.totalMs,
         classificationMs: data.performance?.classificationMs,
@@ -681,7 +701,7 @@ export default function DashboardPage() {
 
       // Dynamically refresh career database timeline from Mem0
       try {
-        const milestonesRes = await fetch('http://localhost:3002/api/profile/milestones?userId=agent-zero-user');
+        const milestonesRes = await fetch('/api/profile/milestones?userId=agent-zero-user');
         if (milestonesRes.ok) {
           const milestonesData = await milestonesRes.json();
           setCareerTimeline(milestonesData);
@@ -757,6 +777,7 @@ export default function DashboardPage() {
           agent: 'career_coach',
           confidence: 96
         }]);
+        streamSubtitle(answer);
       }, 1000);
     } finally {
       setLoading(false);
@@ -808,7 +829,7 @@ export default function DashboardPage() {
                 <div className="p-2.5 rounded-xl bg-green-500/10 border border-green-500/20 text-center">
                   <span className="text-[10px] text-green-400 block font-mono">✓ Compiled Successfully!</span>
                   <a
-                    href="http://localhost:3002/portfolio.html"
+                    href="/portfolio.html"
                     target="_blank"
                     rel="noreferrer"
                     className="text-xs text-secondary hover:underline font-bold mt-1 inline-block animate-pulse"
@@ -1154,6 +1175,21 @@ export default function DashboardPage() {
                         <span className="text-sm font-mono text-gray-400 animate-pulse">{currentStep}</span>
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {/* Visual Recruiter Subtitle Overlay */}
+                {subtitleActive && (
+                  <div className="absolute bottom-28 left-1/2 transform -translate-x-1/2 bg-black/85 border border-primary/40 text-white px-6 py-4 rounded-3xl shadow-[0_0_40px_rgba(124,58,237,0.3)] z-50 backdrop-blur-xl max-w-3xl text-center w-4/5 pointer-events-none transition-all duration-300">
+                    <div className="flex items-center gap-2 justify-center mb-1.5 opacity-80">
+                      <div className="w-2.5 h-2.5 rounded-full bg-primary shadow-[0_0_10px_rgba(124,58,237,1)] animate-ping" />
+                      <span className="text-[10px] font-mono text-primary uppercase tracking-widest flex items-center gap-1 font-bold">
+                        ElevenLabs Voice Synthesizer Active
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium tracking-wide leading-relaxed font-sans text-gray-100">
+                      "{recruiterSubtitle}"
+                    </p>
                   </div>
                 )}
 
