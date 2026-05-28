@@ -51,7 +51,7 @@ ${jobDescription}
     // Using our new hybrid search pipeline from Task 1
     const ragResults = await searchHybridWithScoring(searchQuery, { matchCount: 3, matchThreshold: 0.1 });
 
-    const matchedProjects = ragResults.map(r => ({
+    const matchedProjects = (ragResults || []).map(r => ({
         content: r.content,
         similarity: r.similarity,
         rrf_score: r.rrf_score
@@ -88,8 +88,17 @@ Generate a JSON object with the following schema (NO markdown formatting, just r
     try {
         const result = await cheatSheetModel.generateContent(cheatSheetPrompt);
         let text = result.response.text().trim();
-        if (text.startsWith('```json')) text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-        if (text.startsWith('```')) text = text.replace(/```/g, '').trim();
+        
+        // Robust JSON substring extraction
+        const firstBracket = text.indexOf('{');
+        const lastBracket = text.lastIndexOf('}');
+        if (firstBracket !== -1 && lastBracket !== -1) {
+            text = text.substring(firstBracket, lastBracket + 1);
+        } else {
+            if (text.startsWith('```json')) text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+            if (text.startsWith('```')) text = text.replace(/```/g, '').trim();
+        }
+
         finalCard = JSON.parse(text);
         finalCard.matchedProjects = matchedProjects;
         console.log(`[CultureCard] ✅ Successfully generated culture card with fit score: ${finalCard.fitScore}`);

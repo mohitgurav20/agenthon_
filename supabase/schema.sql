@@ -114,10 +114,10 @@ BEGIN
             d.id,
             d.content,
             d.metadata,
-            ts_rank_cd(to_tsvector('english', d.content), plainto_tsquery('english', query_text)) AS keyword_score,
-            ROW_NUMBER() OVER (ORDER BY ts_rank_cd(to_tsvector('english', d.content), plainto_tsquery('english', query_text)) DESC) AS rank
+            ts_rank_cd(to_tsvector('english', d.content), websearch_to_tsquery('english', query_text)) AS keyword_score,
+            ROW_NUMBER() OVER (ORDER BY ts_rank_cd(to_tsvector('english', d.content), websearch_to_tsquery('english', query_text)) DESC) AS rank
         FROM documents d
-        WHERE to_tsvector('english', d.content) @@ plainto_tsquery('english', query_text)
+        WHERE to_tsvector('english', d.content) @@ websearch_to_tsquery('english', query_text)
     )
     SELECT
         COALESCE(s.id, k.id) AS id,

@@ -9,26 +9,32 @@ const { Pool } = require('pg');
  */
 
 // We typically use the transaction connection pooler string (port 6543) for PgBouncer
-// Fallback to standard SUPABASE_URL parsing if needed, but it's best to have a true connection string.
-const connectionString = process.env.DATABASE_URL || process.env.SUPABASE_CONNECTION_STRING;
+let connectionString = process.env.DATABASE_TRANSACTION_POOL_URL || process.env.DATABASE_URL || process.env.SUPABASE_CONNECTION_STRING;
 
 let pool;
 
 if (connectionString) {
+    // Append application name if not present to aid in pg_stat_activity tracking
+    if (!connectionString.includes('application_name')) {
+        const separator = connectionString.includes('?') ? '&' : '?';
+        connectionString += `${separator}application_name=agenthon_pool`;
+    }
+
     pool = new Pool({
         connectionString,
-        max: 10, // Max number of clients in the pool
-        idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-        connectionTimeoutMillis: 5000, // Return an error after 5 seconds if connection could not be established
+        max: 20, // Max number of clients in the pool (optimized for concurrent loads)
+        idleTimeoutMillis: 10000, // Close idle clients after 10 seconds to free PgBouncer sockets quickly
+        connectionTimeoutMillis: 2000, // Return an error after 2 seconds to fail fast under high congestion
+        maxUses: 75, // Close and recreate connection after 75 uses to prevent memory leaks or resource bloat
     });
 
     pool.on('error', (err, client) => {
-        console.error('❌ [DB Pool] Unexpected error on idle client', err);
+        console.error('❌ [DB Pool] Unexpected error on idle client', err.message);
     });
 
-    console.log('✅ [DB Pool] Connection pool initialized.');
+    console.log('✅ [DB Pool] Connection pool initialized with optimized PgBouncer settings.');
 } else {
-    console.warn('⚠️ [DB Pool] DATABASE_URL not provided. Pool not initialized. (Set this for high-concurrency ops)');
+    console.warn('⚠️ [DB Pool] DATABASE_TRANSACTION_POOL_URL/DATABASE_URL not provided. Pool not initialized. (Set this for high-concurrency ops)');
 }
 
 /**
