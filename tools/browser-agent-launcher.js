@@ -1,80 +1,68 @@
 /**
  * ============================================================
- * RESUMEVAULT AI — AUTONOMOUS BROWSER LAUNCHER
+ * TOOL 15: Browser Agent Launcher (Human-in-the-loop)
  * ============================================================
- * Coordinates the browser-use Python script (python_browser_agent.py)
- * to autonomously navigate job forms and apply.
- * 
- * Resilience: If Python or playwright is missing locally, it
- * falls back to high-fidelity, highly realistic Chromium
- * automation logs to guarantee live demo success on stage!
+ * Wraps the execution of python_browser_agent.py to safely
+ * detect CAPTCHAs and emit resilient pauses back to the UI.
  * ============================================================
  */
 
 const { exec } = require('child_process');
 const path = require('path');
-const fs = require('fs');
+const util = require('util');
+const execPromise = util.promisify(exec);
 
-/**
- * Launch Chromium to autofill and submit a job application
- * @param {object} params
- * @param {string} params.url - Job portal Greenhouse/Lever application URL
- * @param {string} params.task - Autofill instructions containing candidate info
- * @returns {Promise<object>} Execution logs and status
- */
-async function launchBrowserAgent({ url, task }) {
-  console.log(`[BrowserLauncher] Launching autonomous browser for URL: ${url}`);
-  
-  return new Promise((resolve) => {
-    // Escape arguments for shell safety
-    const escapedUrl = url.replace(/"/g, '\\"');
-    const escapedTask = task.replace(/"/g, '\\"');
-    
+async function launchBrowserAgent(url, task) {
+  try {
+    console.log(`[BrowserLauncher] Spawning secure browser agent for ${url}...`);
     const scriptPath = path.join(__dirname, 'python_browser_agent.py');
-    const command = `python "${scriptPath}" "${escapedUrl}" "${escapedTask}"`;
-
-    exec(command, (error, stdout, stderr) => {
-      if (!error) {
-        try {
-          const parsed = JSON.parse(stdout.trim());
-          return resolve(parsed);
-        } catch (e) {
-          console.warn('[BrowserLauncher] Failed to parse script output, using emulator fallback.', stdout);
-        }
-      }
-
-      // ── High-Fidelity local emulator fallback to guarantee success on stage! ──
-      console.warn(`[BrowserLauncher] Local Python/playwright execution failed or USE_MOCKS is active. Engaging resilient Chromium emulator...`);
-
-      const dateStr = new Date().toLocaleTimeString();
-      const emulatedLogs = [
-        `[${dateStr}] [system] Provisioning secure containerized Chromium instance...`,
-        `[${dateStr}] [system] Session Profile directory loaded: C:/Users/shrey/AppData/Local/Google/Chrome/User Data`,
-        `[${dateStr}] [browser] Chrome launched successfully (PID: 8824).`,
-        `[${dateStr}] [browser] Navigating to: ${url}`,
-        `[${dateStr}] [browser] Portal resolved: Bypassed logins. Active authenticated session detected!`,
-        `[${dateStr}] [system] Reading tailored markdown resume from workspace...`,
-        `[${dateStr}] [system] Compiling dynamic cover letter answer from Mem0 profile: "React and pgvector..."`,
-        `[${dateStr}] [browser] Autofilling form fields: Name, Email, GitHub, LinkedIn.`,
-        `[${dateStr}] [browser] Typing cover letter statement inside target text area...`,
-        `[${dateStr}] [browser] Attaching tailored resume: shrey_sharma_cv.pdf`,
-        `[${dateStr}] [browser] Reviewing form fields compliance score...`,
-        `[${dateStr}] [browser] Form completed successfully. Clicking 'Submit Application' autonomously...`,
-        `[${dateStr}] [system] Live job application submitted successfully!`,
-        `[${dateStr}] [system] Chromium session terminated. Clean shutdown.`
-      ];
-
-      resolve({
-        success: true,
-        content: `Successfully applied to ${url} using autonomous Chrome browser-use agent.`,
-        url,
-        logs: emulatedLogs,
-        timestamp: new Date().toISOString()
-      });
+    
+    // Execute python script
+    const { stdout, stderr } = await execPromise(`python "${scriptPath}" "${url}" "${task}"`, {
+      timeout: 120000 // 2 minutes max
     });
-  });
+
+    if (stderr && !stdout) {
+      console.warn(`[BrowserLauncher] Python stderr: ${stderr}`);
+    }
+
+    // Check for Human-in-the-Loop flag
+    if (stdout.includes('HUMAN_INTERVENTION_REQUIRED')) {
+      console.warn(`[BrowserLauncher] 🚨 CAPTCHA/2FA DETECTED! Emitting Safety Pause.`);
+      return {
+        success: false,
+        status: 'safety_pause',
+        message: 'A security check requires human intervention. Please open the Chromium window, solve the CAPTCHA, and re-trigger the workflow.'
+      };
+    }
+
+    let result;
+    try {
+      // Find the JSON block in the stdout in case python printed other logs
+      const jsonStr = stdout.substring(stdout.indexOf('{'));
+      result = JSON.parse(jsonStr);
+    } catch (e) {
+      throw new Error(`Invalid JSON output: ${stdout}`);
+    }
+
+    return result;
+
+  } catch (error) {
+    if (error.stdout && error.stdout.includes('HUMAN_INTERVENTION_REQUIRED')) {
+       return {
+        success: false,
+        status: 'safety_pause',
+        message: 'A security check requires human intervention. Please solve it in the browser.'
+      };
+    }
+    
+    console.error(`[BrowserLauncher] Execution failed: ${error.message}`);
+    return {
+      success: false,
+      status: 'error',
+      error: error.message
+    };
+  }
 }
 
-module.exports = {
-  launchBrowserAgent
-};
+module.exports = { launchBrowserAgent };

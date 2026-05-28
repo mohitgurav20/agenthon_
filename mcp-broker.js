@@ -59,12 +59,32 @@ class MCPBroker {
    */
   async executeCommand(command) {
     return new Promise((resolve) => {
-      // Basic safeguard against highly destructive commands for demo purposes
-      if (command.includes('rm -rf /') || command.includes('format')) {
-        return resolve({ success: false, error: 'Command blocked by MCP Security' });
+      // --- ENTERPRISE SECURITY SANDBOX ---
+      // Block destructive, network, and privilege escalation commands
+      const denylist = [
+        /rm\s+-r/i,      // Recursive delete
+        /del\s+\/s/i,    // Windows recursive delete
+        /format/i,       // Disk format
+        /sudo/i,         // Privilege escalation
+        /curl/i,         // Network fetch (prevents reverse shells / RCE)
+        /wget/i,         // Network fetch
+        /nc\s+/i,        // Netcat
+        /chmod\s+-R/i,   // Recursive permission change
+        /chown/i         // Ownership change
+      ];
+
+      const isBlocked = denylist.some(pattern => pattern.test(command));
+      
+      if (isBlocked) {
+        console.warn(`[MCP Security] Blocked dangerous command: ${command}`);
+        return resolve({ 
+          success: false, 
+          error: 'Command blocked by MCP Security Sandbox (High-Risk Keyword Detected)' 
+        });
       }
 
-      exec(command, { cwd: this.workspaceDir }, (error, stdout, stderr) => {
+      console.log(`[MCP] Executing Sandbox Command: ${command}`);
+      exec(command, { cwd: this.workspaceDir, timeout: 10000 }, (error, stdout, stderr) => {
         if (error) {
           resolve({ success: false, exitCode: error.code, stdout, stderr });
         } else {

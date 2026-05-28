@@ -100,6 +100,50 @@ async function simpleFetch(url) {
       timestamp: new Date().toISOString()
     };
   }
+// Dedicated LinkedIn Job Scraper (Fast Regex extraction without JSDOM)
+async function scrapeLinkedInJob(url) {
+  try {
+    console.log(`[WebScraper] Fast-scraping LinkedIn Job: ${url}`);
+    const response = await axios.get(url, {
+      timeout: 15000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    });
+
+    const html = response.data;
+    
+    // Extract Title
+    let title = "Unknown Title";
+    const titleMatch = html.match(/<h1[^>]*top-card-layout__title[^>]*>(.*?)<\/h1>/i) || html.match(/<h1[^>]*>(.*?)<\/h1>/i);
+    if (titleMatch) title = titleMatch[1].replace(/<[^>]+>/g, '').trim();
+
+    // Extract Description / Criteria
+    let description = "Description not found";
+    const descMatch = html.match(/<div[^>]*description__text[^>]*>([\s\S]*?)<\/div>/i);
+    if (descMatch) {
+      description = descMatch[1]
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<li[^>]*>/gi, '\n- ')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    return {
+      success: true,
+      url,
+      jobData: {
+        title,
+        criteria: description,
+        source: 'LinkedIn'
+      },
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    console.warn(`[WebScraper] LinkedIn Scrape failed: ${error.message}`);
+    return { success: false, url, error: error.message };
+  }
 }
 
-module.exports = { scrapeWeb, simpleFetch };
+module.exports = { scrapeWeb, simpleFetch, scrapeLinkedInJob };

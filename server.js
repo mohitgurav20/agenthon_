@@ -10,7 +10,11 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' });
 const tools = require('./tools');
+const { setupVoiceStream } = require('./tools/voice-stream');
+const { processDocument } = require('./tools/document-reader');
 
 const app = express.Router();
 
@@ -91,6 +95,32 @@ app.post('/api/webhooks/skyvern', (req, res) => {
   console.log(`[Webhook] Status: ${payload.status}`);
   
   res.status(200).send('OK');
+});
+
+// 9. Workflow: PDF Intake -> Skyvern Auto Apply
+app.post('/api/workflows/auto-apply', upload.single('document'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'document file is required' });
+  
+  try {
+    console.log(`[Workflow] Received PDF: ${req.file.path}`);
+    
+    // 1. Extract text from PDF using Document Reader tool
+    const parseResult = await processDocument(req.file.path);
+    if (!parseResult.success) throw new Error('PDF Parsing failed');
+    
+    // 2. Trigger Skyvern immediately to fill the form autonomously
+    console.log(`[Workflow] Triggering Skyvern to autofill the application...`);
+    const skyvernResult = await tools.executeTool('skyvern_fill_form', {
+      url: req.body.url || 'https://example.com/apply',
+      prompt: 'Fill out this job application form using the user data. Do not submit until verified.',
+      extracted_data: parseResult // In a real flow, we'd pass this through Gemini first to get pure JSON
+    });
+
+    res.json({ success: true, skyvern_status: skyvernResult });
+  } catch (error) {
+    console.error('[Workflow] Error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 module.exports = app;

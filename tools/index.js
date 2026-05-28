@@ -7,26 +7,27 @@
  * ============================================================
  */
 
-const { searchWeb } = require('./tavily-search');
-const { scrapeWeb } = require('./web-scraper');
-const { sendEmail } = require('./email-sender');
+const { searchWeb, searchJobBoards } = require('./tavily-search');
+const { scrapeWeb, scrapeLinkedInJob } = require('./web-scraper');
+const { sendEmail, sendDirectApplication } = require('./email-sender');
 const { sendWhatsApp } = require('./whatsapp-notifier');
 const { processDocument, searchDocuments } = require('./document-reader');
 const { analyzeImage } = require('./image-analyzer');
 const { generateReport } = require('./report-generator');
 const { makePhoneCall } = require('./phone-caller');
 const { analyzeData } = require('./data-analytics');
-const { textToSpeech } = require('./voice-interface');
-const { runRemoteSandbox } = require('./managed_agent_tool');
+const { textToSpeech, triggerRecruiterFeedback } = require('./voice-interface');
 const { executeSkyvernTask } = require('./skyvern-agent');
-const { evaluateResume } = require('./ats-analyzer');
-const { launchBrowserAgent } = require('./browser-agent-launcher');
+const { executeAtsParser } = require('./managed_agent_tool');
 
 // Registry mapping tool names to their execution functions
 const toolRegistry = {
   'web_search': searchWeb,
+  'job_crawler': searchJobBoards,
   'web_scrape': scrapeWeb,
+  'scrape_linkedin': scrapeLinkedInJob,
   'send_email': sendEmail,
+  'send_direct_application': sendDirectApplication,
   'send_whatsapp': sendWhatsApp,
   'rag_process_doc': processDocument,
   'rag_search': searchDocuments,
@@ -35,10 +36,9 @@ const toolRegistry = {
   'make_phone_call': makePhoneCall,
   'analyze_data': analyzeData,
   'text_to_speech': textToSpeech,
-  'run_remote_sandbox': runRemoteSandbox,
+  'recruiter_feedback': triggerRecruiterFeedback,
   'skyvern_fill_form': executeSkyvernTask,
-  'ats_evaluate': evaluateResume,
-  'run_browser_task': launchBrowserAgent
+  'ats_parser': executeAtsParser
 };
 
 // --- Enterprise Hardening: Token Bucket Rate Limiter ---
@@ -145,8 +145,11 @@ module.exports = {
   executeTool,
   toolRegistry,
   searchWeb,
+  searchJobBoards,
   scrapeWeb,
+  scrapeLinkedInJob,
   sendEmail,
+  sendDirectApplication,
   sendWhatsApp,
   processDocument,
   searchDocuments,
@@ -155,9 +158,8 @@ module.exports = {
   makePhoneCall,
   analyzeData,
   textToSpeech,
-  runRemoteSandbox,
+  triggerRecruiterFeedback,
   executeSkyvernTask,
-  evaluateResume,
-  launchBrowserAgent
+  executeAtsParser
 };
 

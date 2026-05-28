@@ -92,4 +92,46 @@ function generateEmailHTML({ title, greeting, bodyText, actionUrl, actionLabel, 
   `;
 }
 
-module.exports = { sendEmail, generateEmailHTML };
+// Direct Apply function with Resume Attachment
+async function sendDirectApplication({ to, jobTitle, resumePdfPath, recruiterName = "Hiring Manager", userName = "Candidate" }) {
+  try {
+    if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+      throw new Error('Gmail credentials not configured.');
+    }
+
+    const subject = `Application for ${jobTitle} - ${userName}`;
+    const bodyText = `Dear ${recruiterName},\n\nI am writing to express my strong interest in the ${jobTitle} position. Please find my tailored resume attached.\n\nBest regards,\n${userName}\n(Sent via Agent Zero Autonomous Apply)`;
+    
+    // Convert to HTML
+    const htmlBody = bodyText.replace(/\n/g, '<br>');
+
+    const mailOptions = {
+      from: `${userName} (via Agent Zero) <${process.env.GMAIL_USER}>`,
+      to,
+      subject,
+      text: bodyText,
+      html: htmlBody,
+      attachments: [
+        {
+          filename: `Resume_${userName.replace(' ', '_')}.pdf`,
+          path: resumePdfPath // Nodemailer handles reading the file path directly
+        }
+      ]
+    };
+
+    console.log(`[EmailSender] Sending direct application to ${to} with attachment ${resumePdfPath}`);
+    const info = await getTransporter().sendMail(mailOptions);
+
+    return {
+      success: true,
+      status: 'sent',
+      messageId: info.messageId,
+      message: `Application emailed successfully to ${to} with resume attached.`
+    };
+  } catch (error) {
+    console.error(`[EmailSender] Application send failed: ${error.message}`);
+    return { success: false, error: error.message };
+  }
+}
+
+module.exports = { sendEmail, generateEmailHTML, sendDirectApplication };
