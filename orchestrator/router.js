@@ -24,7 +24,7 @@ const MODELS = {
   deep: {
     name: 'gemini-pro',
     provider: 'gemini',
-    model: 'gemini-2.5-pro',
+    model: 'gemini-1.5-pro',
     description: 'Complex reasoning, analysis, multi-step planning',
     maxTokens: 4096
   },
@@ -46,8 +46,8 @@ const MODELS = {
 
 // Dynamic in-memory routing table for LLM Switcher UI
 let dynamicModels = {
-  router: 'fast',       // default to fast (groq-llama)
-  research: 'flash',    // default to flash (gemini-flash)
+  router: 'deep',       // upgraded to deep for maximum reasoning
+  research: 'deep',    // upgraded to deep for complex data synthesis
   action: 'deep',       // default to deep (gemini-pro)
   validator: 'deep' // default to deep (gemini-pro)
 };
@@ -229,7 +229,7 @@ async function callGemini(prompt, systemPrompt = '', modelType = 'deep', session
     if (process.env.GROQ_API_KEY && !process.env.GROQ_API_KEY.includes('your_')) {
       console.log("[Router Fallback] Emergency redirecting Gemini query to Groq...");
       try {
-        return await callGroqResilient(prompt, systemPrompt, 1024, sessionId);
+        return await callGroqResilient(prompt, systemPrompt, 8000, sessionId);
       } catch (err3) {
         console.error("[Router Fallback] Groq fallback failed:", err3.message);
       }
@@ -324,6 +324,7 @@ function selectModel(complexity) {
     case 'simple':
       return 'fast';
     case 'complex':
+    case 'deep':
       return 'deep';
     case 'validation':
       return 'validation';

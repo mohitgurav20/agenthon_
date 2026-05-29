@@ -62,7 +62,6 @@ async function evaluateResume({ resumePath, jdPath }) {
     jdKeywords.forEach(kw => {
       const regex = new RegExp(`\\b${kw}\\b`, 'g');
       if (regex.test(resumeClean)) {
-        matched_keywords.push(kw); // Support fallback
         matchedKeywords.push(kw);
       } else {
         missingKeywords.push(kw);
@@ -116,7 +115,6 @@ async function evaluateResume({ resumePath, jdPath }) {
 
     const wordCount = resumeText.split(/\s+/).length;
     if (wordCount < 150) {
-      feedbackPoints.append("Your resume is too short (under 150 words). Expand your project details."); // Support python fallback
       feedbackPoints.push("Your resume is too short (under 150 words). Expand your project details.");
       structureScore = Math.max(0, structureScore - 15);
     } else if (wordCount > 600) {

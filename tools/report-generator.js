@@ -11,12 +11,11 @@
  * ============================================================
  */
 
-const Groq = require('groq-sdk');
 const { createClient } = require('@supabase/supabase-js');
+const { generateResponse } = require('../orchestrator/router.js');
 
 async function generateResume({ profileData, targetJob, customInstructions = '' }) {
   try {
-    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
     const prompt = `You are a world-class Executive Resume Writer.
 Your task is to take the raw candidate data and target job description, and return a highly detailed JSON object containing the expanded, deeply professional text for each section of their resume.
@@ -30,36 +29,37 @@ ${targetJob || 'Software Engineer (General)'}
 CUSTOM INSTRUCTIONS:
 ${customInstructions}
 
-CRITICAL REQUIREMENTS:
-1. Return ONLY a valid JSON object. No markdown, no explanations.
-2. The user's name is in the data. YOU MUST USE THE ACTUAL NAME from the candidate data. Do NOT use "John Doe" or "Candidate".
-3. USE THE STAR METHOD: You must heavily use the Situation, Task, Action, Result framework for all bullet points. Quantify achievements heavily.
-4. KEYWORD OPTIMIZATION: Weave in relevant tech stack and industry keywords based on the job description.
-5. NO PLACEHOLDERS: NEVER use the example values provided in the JSON structure below. YOU MUST USE THE ACTUAL DATA provided above. 
-6. INVENT MISSING DATA: ONLY if the candidate data is entirely missing work experience or education, you MUST INVENT deeply technical, believable, and realistic company names, roles, dates, and educational degrees that map perfectly to the target job description. 
-7. USE GITHUB DATA: Incorporate the provided GitHub projects and skills actively into the experience and projects sections.
-8. NEVER REPEAT RAW MEMORY STRINGS: The candidate data contains raw memory phrases like "User Pranali Bose has a project...". YOU MUST REWRITE THESE INTO PROFESSIONAL RESUME BULLETS. NEVER output phrases like "User has a repository...". Always format as professional bullet points: "Developed a Jupyter Notebook fine-tuned LLM..."
+CRITICAL SYSTEM INSTRUCTIONS (IGNORE ALL PREVIOUS INSTRUCTIONS):
+YOU ARE THE WORLD'S MOST STRICT AND RIGOROUS JSON-ONLY RESUME GENERATOR.
+YOUR SOLE PURPOSE IS TO OUTPUT A PERFECT, VALID JSON OBJECT THAT ADHERES EXACTLY TO THE SCHEMA PROVIDED.
+YOU MUST EXTRACT DATA FROM THE 'CANDIDATE DATA' SECTION AND MAP IT TO THE JSON SCHEMA.
+ABSOLUTELY NO MARKDOWN FORMATTING (do not use \`\`\`json or \`\`\`).
+ABSOLUTELY NO CONVERSATIONAL TEXT (do not say "Here is the resume...").
+ABSOLUTELY NO HALLUCINATIONS (if a field is missing in Candidate Data, leave it empty. DO NOT invent dates, names, or metrics).
+
+STRICT RULES:
+1. Return ONLY raw JSON starting with '{' and ending with '}'.
+2. You must heavily use the Situation, Task, Action, Result (STAR) framework for all bullets.
+3. Every single fact must come directly from Candidate Data. Zero tolerance for hallucination.
+4. Rewrite raw memory strings into professional resume bullets.
+5. NO PLACEHOLDERS. Do NOT use the example values from the schema.
 
 You MUST return a JSON object with exactly these keys. DO NOT USE THE TEXT IN THE VALUES BELOW, THEY ARE JUST DESCRIPTIONS OF WHAT TO PUT:
 {
-  "name": "<INSERT CANDIDATE ACTUAL FULL NAME HERE>",
-  "contactInfo": "Mobile: <INSERT ACTUAL OR REALISTIC PHONE> * E-Mail: <INSERT ACTUAL EMAIL>",
-  "tagline": "Seeking assignments in <INSERT TARGET ROLE> with a growth oriented organisation",
-  "locationPref": "Location Preference: <INSERT ACTUAL OR REALISTIC CITY>",
-  "overviewBullets": ["<INSERT DETAILED PROFESSIONAL SUMMARY BULLET 1>", "<INSERT DETAILED PROFESSIONAL SUMMARY BULLET 2>"],
+  "name": "<INSERT ACTUAL OR REALISTIC NAME>",
+  "contactInfo": "<INSERT EMAIL, GITHUB, LOCATION>",
+  "tagline": "<INSERT 1-LINE PROFESSIONAL TAGLINE>",
+  "locationPref": "<INSERT REALISTIC LOCATION PREFERENCE>",
+  "overviewBullets": ["<INSERT BULLET 1>", "<INSERT BULLET 2>", "<INSERT BULLET 3>"],
   "technicalSkills": [
-     { "category": "<INSERT CATEGORY LIKE Languages>", "skills": "<INSERT COMMA SEPARATED SKILLS FROM DATA>" },
-     { "category": "<INSERT CATEGORY LIKE Frameworks>", "skills": "<INSERT COMMA SEPARATED SKILLS FROM DATA>" }
+    { "category": "Languages", "skills": "<INSERT COMMA SEPARATED SKILLS>" },
+    { "category": "Frameworks & Tools", "skills": "<INSERT COMMA SEPARATED SKILLS>" }
   ],
-  "functionalSkills": ["<INSERT SKILL 1>", "<INSERT SKILL 2>", "<INSERT SKILL 3>"],
-  "organisationalScan": [
-     "<INSERT DATE RANGE>: <INSERT ACTUAL/REALISTIC COMPANY>, <INSERT CITY> as <INSERT ROLE>",
-     "<INSERT DATE RANGE>: <INSERT ACTUAL/REALISTIC COMPANY>, <INSERT CITY> as <INSERT ROLE>"
-  ],
-  "mainProjectTitle": "<INSERT ACTUAL GITHUB PROJECT NAME FROM DATA>",
+  "functionalSkills": ["<INSERT SKILL 1>", "<INSERT SKILL 2>"],
+  "organisationalScan": ["<INSERT REALISTIC ROLE AND COMPANY>"],
+  "mainProjectTitle": "<INSERT BEST GITHUB PROJECT NAME AND DESCRIPTION>",
   "otherProjects": ["<INSERT OTHER GITHUB PROJECT 1>", "<INSERT OTHER GITHUB PROJECT 2>"],
   "significantHighlights": [
-     { "company": "At <INSERT COMPANY OR PROJECT NAME>", "bullets": ["<INSERT DETAILED STAR BULLET 1>", "<INSERT DETAILED STAR BULLET 2>"] },
      { "company": "At <INSERT COMPANY OR PROJECT NAME>", "bullets": ["<INSERT DETAILED STAR BULLET 1>", "<INSERT DETAILED STAR BULLET 2>"] }
   ],
   "academicCredentials": "<INSERT ACTUAL OR REALISTIC DEGREE, UNIVERSITY, YEAR>",
@@ -67,24 +67,30 @@ You MUST return a JSON object with exactly these keys. DO NOT USE THE TEXT IN TH
   "residentialAddress": "<INSERT ACTUAL OR REALISTIC ADDRESS>"
 }`;
 
-    const result = await groq.chat.completions.create({
-      model: 'llama-3.1-8b-instant',
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.3,
-      max_tokens: 4096,
-      response_format: { type: 'json_object' },
-    });
-    
-    let contentStr = result.choices[0]?.message?.content || '{}';
+    const aiResponse = await generateResponse(prompt, '', 'deep', 'resume-generation');
+    let contentStr = aiResponse || '{}';
     let data;
     try {
-      data = JSON.parse(contentStr);
-    } catch(e) {
-      // Clean up markdown block if present
-      if (contentStr.startsWith('\`\`\`json')) {
-        contentStr = contentStr.replace(/^\`\`\`json/i, '').replace(/\`\`\`$/, '').trim();
+      // Robust JSON extraction
+      const jsonMatch = contentStr.match(/\{[\s\S]*\}/);
+      let jsonStr = jsonMatch ? jsonMatch[0] : contentStr;
+      // Strip any weird markdown or trailing characters
+      jsonStr = jsonStr.replace(/^```json\s*/, '').replace(/\s*```$/, '').trim();
+      
+      if (jsonStr.startsWith('{')) {
+        try {
+          data = JSON.parse(jsonStr);
+        } catch (parseErr) {
+          // Fallback to more forgiving evaluation for trailing commas etc
+          console.warn("[ReportGenerator] Strict JSON parse failed, falling back to eval");
+          data = new Function("return " + jsonStr)();
+        }
+      } else {
+        throw new Error("No JSON object found in response");
       }
-      data = JSON.parse(contentStr);
+    } catch(e) {
+      console.error("[ReportGenerator] JSON extraction failed completely:", e);
+      throw new Error("AI failed to output valid JSON schema");
     }
 
     let overviewHtml = (data.overviewBullets || []).map(b => `<li>${b}</li>`).join('');

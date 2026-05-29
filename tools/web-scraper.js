@@ -20,6 +20,7 @@ const path = require('path');
 const util = require('util');
 const execPromise = util.promisify(exec);
 const axios = require('axios');
+const { generateResponse } = require('../orchestrator/router');
 
 async function scrapeWeb(url, task = 'Extract all main content from this page') {
   try {
@@ -79,13 +80,16 @@ async function simpleFetch(url) {
       .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
       .replace(/<[^>]+>/g, ' ')
       .replace(/\s+/g, ' ')
-      .trim()
-      .substring(0, 5000); // Limit to 5k chars
+      .trim();
+
+    // Top-notch LLM extraction to get the clean text
+    const prompt = `Extract all main readable content from this raw web text. Ignore navigation, footers, and noise. Return clean readable text. Text: ${text.substring(0, 12000)}`;
+    const cleanContent = await generateResponse(prompt, 'You are an expert web extraction AI.', 'flash', 'web-scrape');
 
     return {
       success: true,
       url,
-      content: text,
+      content: cleanContent || text.substring(0, 5000),
       screenshots: [],
       fallback: true,
       timestamp: new Date().toISOString()
@@ -102,10 +106,10 @@ async function simpleFetch(url) {
   }
 }
 
-// Dedicated LinkedIn Job Scraper (Fast Regex extraction without JSDOM)
+// Dedicated LinkedIn Job Scraper (Top-notch LLM extraction)
 async function scrapeLinkedInJob(url) {
   try {
-    console.log(`[WebScraper] Fast-scraping LinkedIn Job: ${url}`);
+    console.log(`[WebScraper] AI-powered scraping LinkedIn Job: ${url}`);
     const response = await axios.get(url, {
       timeout: 15000,
       headers: {
@@ -113,31 +117,31 @@ async function scrapeLinkedInJob(url) {
       }
     });
 
-    const html = response.data;
+    const text = response.data
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
     
-    // Extract Title
-    let title = "Unknown Title";
-    const titleMatch = html.match(/<h1[^>]*top-card-layout__title[^>]*>(.*?)<\/h1>/i) || html.match(/<h1[^>]*>(.*?)<\/h1>/i);
-    if (titleMatch) title = titleMatch[1].replace(/<[^>]+>/g, '').trim();
-
-    // Extract Description / Criteria
-    let description = "Description not found";
-    const descMatch = html.match(/<div[^>]*description__text[^>]*>([\s\S]*?)<\/div>/i);
-    if (descMatch) {
-      description = descMatch[1]
-        .replace(/<br\s*\/?>/gi, '\n')
-        .replace(/<li[^>]*>/gi, '\n- ')
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
+    const prompt = `Extract the exact Job Title and the full Job Description/Criteria from this raw LinkedIn page text. Return ONLY a valid JSON object with keys "title" and "criteria". Text: ${text.substring(0, 15000)}`;
+    const llmResp = await generateResponse(prompt, 'You are an ATS parsing expert.', 'flash', 'web-scrape');
+    
+    let parsed;
+    try {
+      const cleanJson = llmResp.replace(/^\s*```json/i, '').replace(/```\s*$/, '').trim();
+      parsed = JSON.parse(cleanJson);
+    } catch(e) {
+      console.warn(`[WebScraper] JSON parse failed, using raw response`);
+      parsed = { title: "Extracted Job Title", criteria: llmResp };
     }
 
     return {
       success: true,
       url,
       jobData: {
-        title,
-        criteria: description,
+        title: parsed.title || "Unknown Title",
+        criteria: parsed.criteria || "Description not found",
         source: 'LinkedIn'
       },
       timestamp: new Date().toISOString()

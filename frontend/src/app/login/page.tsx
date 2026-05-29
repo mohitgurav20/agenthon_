@@ -52,10 +52,14 @@ export default function LoginPage() {
         const count = data.milestones?.length || 0;
         setImportStatus(`✅ AI organized ${count} career facts! Loading dashboard...`);
 
-        // Store so dashboard picks up instantly without waiting for Mem0 re-fetch
+        // CRITICAL: Clear ALL old profile data before storing new one
+        sessionStorage.clear();
+        
+        // ALWAYS store the username
+        sessionStorage.setItem('importedUsername', data.username || githubUsername);
+        // Store milestones for instant dashboard pickup
         if (data.milestones && data.milestones.length > 0) {
           sessionStorage.setItem('importedMilestones', JSON.stringify(data.milestones));
-          sessionStorage.setItem('importedUsername', data.username || githubUsername);
         }
         setTimeout(() => { window.location.href = '/dashboard'; }, 1200);
       } else {

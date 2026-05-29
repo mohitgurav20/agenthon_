@@ -41,28 +41,34 @@ async function getContext(query, userId = 'agent-zero-user') {
 }
 
 /**
- * Search the web via Person B's Tavily tool
+ * Search for real jobs using RapidAPI JSearch
  */
-async function searchWeb(query) {
+async function searchJobsAPI(query) {
   try {
-    const response = await fetch(`${TOOLS_API}/api/tools/search`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, maxResults: 5 })
+    const rapidApiKey = process.env.RAPIDAPI_KEY;
+    if (!rapidApiKey || rapidApiKey.includes('your_')) {
+      console.warn('[ResearchAgent] No RapidAPI key. Skipping JSearch.');
+      return [];
+    }
+
+    const encodedQuery = encodeURIComponent(query);
+    const response = await fetch(`https://jsearch.p.rapidapi.com/search?query=${encodedQuery}&num_pages=1`, {
+      method: 'GET',
+      headers: {
+        'x-rapidapi-key': rapidApiKey,
+        'x-rapidapi-host': 'jsearch.p.rapidapi.com'
+      }
     });
 
     if (!response.ok) {
-      console.warn('[ResearchAgent] Tools API search returned', response.status);
+      console.warn('[ResearchAgent] JSearch API returned', response.status);
       return [];
     }
 
     const data = await response.json();
-    if (data.result && Array.isArray(data.result.results)) return data.result.results;
-    if (data.results && Array.isArray(data.results)) return data.results;
-    if (Array.isArray(data.result)) return data.result;
-    return [];
+    return data.data || [];
   } catch (err) {
-    console.warn('[ResearchAgent] Tools API unavailable:', err.message);
+    console.warn('[ResearchAgent] JSearch API unavailable:', err.message);
     return [];
   }
 }
@@ -82,14 +88,9 @@ async function run(userInput, sessionId, userId = 'agent-zero-user', complexity 
                       userInput.toLowerCase().includes('recommend') ||
                       userInput.toLowerCase().includes('crawl');
 
-  // ── PARALLEL FETCH: Memory + Web Search simultaneously ──
-  const searchForJobs = isJobSearch 
-    ? `site:boards.greenhouse.io OR site:jobs.lever.co ${userInput}`
-    : userInput;
-
   const [context, webResults] = await Promise.all([
     getContext(userInput, userId),
-    searchWeb(searchForJobs)
+    isJobSearch ? searchJobsAPI(userInput) : []
   ]);
 
   const parallelMs = Date.now() - startTime;
@@ -118,20 +119,17 @@ async function run(userInput, sessionId, userId = 'agent-zero-user', complexity 
     scrapedJobs = [];
     const rawResults = webResults || [];
     
-    // Parse Tavily results to construct matching jobs
+    // Parse JSearch results to construct matching jobs
     rawResults.forEach((r, idx) => {
-      const title = r.title || "Software Engineer Intern";
-      // Extract company from URL
-      let company = "Tech Startup";
-      const greenMatch = r.url?.match(/greenhouse\.io\/([a-zA-Z0-9\-]+)/);
-      const leverMatch = r.url?.match(/lever\.co\/([a-zA-Z0-9\-]+)/);
-      if (greenMatch) company = greenMatch[1].charAt(0).toUpperCase() + greenMatch[1].slice(1);
-      else if (leverMatch) company = leverMatch[1].charAt(0).toUpperCase() + leverMatch[1].slice(1);
+      const title = r.job_title || "Software Engineer";
+      const company = r.employer_name || "Tech Company";
+      const url = r.job_apply_link || r.job_google_link || '#';
+      const description = r.job_description || title;
 
       // Determine required keywords in job details
       const requiredKeywords = [];
       technologies.forEach(tech => {
-        if (new RegExp(`\\b${tech}\\b`, 'i').test(r.content || r.title)) {
+        if (new RegExp(`\\b${tech}\\b`, 'i').test(description)) {
           requiredKeywords.push(tech);
         }
       });
@@ -145,28 +143,15 @@ async function run(userInput, sessionId, userId = 'agent-zero-user', complexity 
         : 85;
 
       scrapedJobs.push({
-        title: title.includes('|') ? title.split('|')[0].trim() : title.substring(0, 30),
+        title: title.includes('|') ? title.split('|')[0].trim() : title.substring(0, 40),
         company,
-        url: r.url || '#',
+        url,
         match: matchScore,
         status: 'idle',
         keywords: requiredKeywords
       });
     });
 
-    // Fallback: Resilient mock crawler data for live hackathon presentations to guarantee success!
-    if (scrapedJobs.length === 0) {
-      // Extract a plausible role from userInput or default to Software Engineer
-      const roleMatch = userInput.match(/(?:for|as a)\s+([a-zA-Z\s]+?)(?:job|role|position|$)/i);
-      const role = roleMatch ? roleMatch[1].trim() : "Software Engineer";
-      
-      scrapedJobs = [
-        { title: `${role} - Remote`, company: "Figma", url: "https://www.figma.com/careers", match: 95, status: "idle", keywords: ["React", "Node.js", "Docker", "Git"] },
-        { title: `Senior ${role}`, company: "Vercel", url: "https://vercel.com/careers", match: 90, status: "idle", keywords: ["Postgres", "Node.js", "Supabase", "Git"] },
-        { title: `${role} (Full-Stack)`, company: "Supabase", url: "https://supabase.com/careers", match: 88, status: "idle", keywords: ["Supabase", "pgvector", "React", "Node.js"] }
-      ];
-    }
-    
     // Sort crawled jobs by match percentage desc
     scrapedJobs.sort((a, b) => b.match - a.match);
     scrapedJobs = scrapedJobs.slice(0, 3); // Take top 3
@@ -189,17 +174,29 @@ async function run(userInput, sessionId, userId = 'agent-zero-user', complexity 
     contextBlock = `--- USER MEMORIES (from Mem0) ---\n${mems}\n\n--- KNOWLEDGE BASE (from Supabase RAG) ---\n${docs}`;
   }
 
-  const enrichedPrompt = `USER QUESTION: ${userInput}
+  const hugeAiPrompt = `
+You are FLUX AI, an elite, hyper-intelligent career orchestration engine. 
+You are tasked with analyzing the user's explicit episodic memory (skills, background, and exact GitHub/LinkedIn data) and mapping it precisely to the real-world scraped jobs provided below.
+CRITICAL INSTRUCTIONS:
+1. Synthesize a professional, comprehensive, and highly encouraging response.
+2. If real jobs are found, explain exactly WHY the user is a good fit based on the semantic match between their GitHub/LinkedIn skills and the job's required technologies.
+3. If no jobs are found, advise the user to broaden their search or upload a more detailed resume.
+4. DO NOT make up generic responses. Use the raw data provided.
+`;
 
---- USER CONTEXT ---
+  const enrichedPrompt = `${hugeAiPrompt}
+
+USER QUESTION: ${userInput}
+
+--- USER CONTEXT (GitHub & LinkedIn Memories) ---
 ${contextBlock}
 
---- WEB SEARCH RESULTS (from Tavily) ---
+--- REAL JOB SEARCH RESULTS (from RapidAPI JSearch) ---
 ${webResults.length > 0
-    ? webResults.map((r, i) => `[Web ${i + 1}]: ${r.title || ''} — ${r.content || r.snippet || ''} (${r.url || ''})`).join('\n')
-    : '(no web results found)'}
+    ? webResults.map((r, i) => `[Job ${i + 1}]: ${r.job_title} at ${r.employer_name} — Required: ${r.job_description ? r.job_description.substring(0, 300) : ''}... (${r.job_apply_link})`).join('\n')
+    : '(no real job results found)'}
 
-Please synthesize a comprehensive answer using all available sources.`;
+Please synthesize a comprehensive answer using all available real data sources.`;
 
   // ── Generate response using the right model ──
   const answer = await generateResponse(enrichedPrompt, systemPrompt, 'research', sessionId);

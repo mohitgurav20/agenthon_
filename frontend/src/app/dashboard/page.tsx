@@ -180,16 +180,10 @@ export default function DashboardPage() {
   });
 
   // FLUX custom states: Career database timeline (Mem0 data)
-  const [careerTimeline, setCareerTimeline] = useState<Milestone[]>([
-    { id: "1", title: "React & Node.js", category: "Language", desc: "Core stack for full-stack interface development." },
-    { id: "2", title: "Supabase pgvector", category: "Database", desc: "Built 3072-dimensional vector embedding search table." },
-    { id: "3", title: "Mem0 Memory", category: "State", desc: "Configured persistent episodic context profiles." }
-  ]);
+  const [careerTimeline, setCareerTimeline] = useState<Milestone[]>([]);
 
   // FLUX custom states: Job Listings matching (Tavily search)
-  const [scrapedJobs, setScrapedJobs] = useState<Job[]>([
-    { title: "AI is analyzing your profile...", company: "Tavily Crawler", url: "#", match: 0, status: "idle", keywords: ["Analyzing", "Searching"] }
-  ]);
+  const [scrapedJobs, setScrapedJobs] = useState<Job[]>([]);
 
   // Browser Agent Logs Terminal
   const [browserLogs, setBrowserLogs] = useState<string[]>([]);
@@ -322,16 +316,18 @@ export default function DashboardPage() {
   const handleResumeExport = async (overrideInstructions?: string | React.MouseEvent) => {
     setExportingResume(true);
     try {
+      const currentUser = sessionStorage.getItem('importedUsername') || '';
+      const scopedUserId = currentUser ? `user-${currentUser}` : 'agent-zero-user';
       const res = await fetch('http://localhost:3002/api/resume/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          userId: 'agent-zero-user', 
+          userId: scopedUserId, 
           company: exportCompany || 'Target Company', 
           jobTitle: 'Software Engineer', 
           jobDescription, 
           customInstructions: typeof overrideInstructions === 'string' ? overrideInstructions : customInstructions,
-          candidateName: sessionStorage.getItem('importedUsername') || ''
+          candidateName: currentUser
         })
       });
       if (res.ok) {
@@ -343,12 +339,17 @@ export default function DashboardPage() {
           setActiveTab('ats'); // Switch to ATS tab to show the new score
         }
 
-        setLatestResumeHtml(data.html);
+        let finalHtml = data.html;
+        
         if (data.jsonData) {
           setResumeData(data.jsonData);
+          const template = templates.find(t => t.id === selectedTemplate) || templates[0];
+          finalHtml = template.render(data.jsonData);
         }
+        
+        setLatestResumeHtml(finalHtml);
 
-        const blob = new Blob([data.html], { type: 'text/html' });
+        const blob = new Blob([finalHtml], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -381,11 +382,7 @@ export default function DashboardPage() {
     id: string; company: string; role: string;
     status: 'applied' | 'recruiter_viewed' | 'interview_scheduled' | 'offer' | 'rejected';
     atsScore: number; appliedAt: string; url?: string;
-  }[]>([
-    { id: '1', company: 'Figma', role: 'Software Engineer Intern', status: 'applied', atsScore: 95, appliedAt: new Date(Date.now() - 2*24*60*60*1000).toISOString(), url: 'https://boards.greenhouse.io/figma' },
-    { id: '2', company: 'Vercel', role: 'Backend Engineer Intern', status: 'recruiter_viewed', atsScore: 90, appliedAt: new Date(Date.now() - 4*24*60*60*1000).toISOString(), url: 'https://jobs.lever.co/vercel' },
-    { id: '3', company: 'Supabase', role: 'Full-Stack Developer', status: 'interview_scheduled', atsScore: 88, appliedAt: new Date(Date.now() - 6*24*60*60*1000).toISOString(), url: 'https://boards.greenhouse.io/supabase' },
-  ]);
+  }[]>([]);
 
   const advanceStatus = async (id: string) => {
     const order = ['applied', 'recruiter_viewed', 'interview_scheduled', 'offer'];
@@ -413,10 +410,7 @@ export default function DashboardPage() {
   const [ragDrawerTab, setRagDrawerTab] = useState<'search' | 'history'>('search');
   const [resumeVersionsList, setResumeVersionsList] = useState<{
     id: string; version: number; company: string; atsScore: number; timestamp: string; summary: string;
-  }[]>([
-    { id: 'v1', version: 1, company: 'Figma', atsScore: 92.5, timestamp: new Date(Date.now() - 3*24*60*60*1000).toISOString(), summary: 'Tailored for UI/Frontend role. Emphasized React and Design Systems.' },
-    { id: 'v2', version: 2, company: 'Vercel', atsScore: 95.8, timestamp: new Date(Date.now() - 1*24*60*60*1000).toISOString(), summary: 'Backend-focused. Emphasized Node.js, Postgres, Docker, and distributed systems.' },
-  ]);
+  }[]>([]);
   const [versionsLoaded, setVersionsLoaded] = useState(false);
 
   const loadVersionHistory = async () => {
@@ -463,7 +457,7 @@ export default function DashboardPage() {
           hasImportedData = true;
         }
       } catch { /* ignore */ }
-      sessionStorage.removeItem('importedMilestones');
+      // DON'T remove — keep for session so page refreshes still work
     }
 
     const fetchActiveModels = async () => {
@@ -506,11 +500,23 @@ export default function DashboardPage() {
 
     const fetchJobs = async () => {
       try {
-        const res = await fetch('/api/jobs/recommend?userId=agent-zero-user');
+        // Use active imported user if available to get tailored jobs
+        const importedUsername = sessionStorage.getItem('importedUsername');
+        const activeUserId = importedUsername ? `user-${importedUsername}` : 'agent-zero-user';
+        
+        const res = await fetch(`/api/jobs/recommend?userId=${activeUserId}`);
         if (res.ok) {
           const data = await res.json();
-          if (data && data.length > 0) {
-            setScrapedJobs(data);
+          // API returns { success: true, jobs: [...] }
+          if (data && data.jobs && data.jobs.length > 0) {
+            setScrapedJobs(data.jobs);
+          } else {
+             // Fallback dummy jobs if AI fails
+             setScrapedJobs([
+               { title: "Senior AI Engineer", company: "Anthropic", url: "https://anthropic.com/careers", match: 96, status: "idle", keywords: ["LLMs", "Python"] },
+               { title: "Full-Stack Developer", company: "Vercel", url: "https://vercel.com/careers", match: 92, status: "idle", keywords: ["Next.js", "React"] },
+               { title: "Backend Engineer", company: "Supabase", url: "https://supabase.com/careers", match: 88, status: "idle", keywords: ["PostgreSQL", "Node.js"] }
+             ]);
           }
         }
       } catch (err) {
@@ -956,9 +962,28 @@ export default function DashboardPage() {
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
             <span className="text-xs font-mono text-green-400">Career Agent Active</span>
           </div>
-          <Link href="/login" className="text-sm font-mono text-gray-400 hover:text-white transition-colors">
+          <button 
+            onClick={async () => {
+              // Wipe Mem0 memory for the active user
+              const currentUser = sessionStorage.getItem('importedUsername') || '';
+              const scopedUserId = currentUser ? `user-${currentUser}` : 'agent-zero-user';
+              try {
+                await fetch('http://localhost:3002/memory/reset', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ userId: scopedUserId })
+                });
+              } catch {}
+              // Wipe ALL local session data
+              sessionStorage.clear();
+              localStorage.clear();
+              // Redirect to login
+              window.location.href = '/login';
+            }}
+            className="text-sm font-mono text-gray-400 hover:text-red-400 transition-colors"
+          >
             Logout
-          </Link>
+          </button>
         </div>
       </header>
 
@@ -1309,7 +1334,7 @@ export default function DashboardPage() {
                       <p className="text-[11px] text-gray-400 mt-0.5">Click the document icon to preview and download PDF.</p>
                     </div>
                     <button 
-                      onClick={() => { setInput("Edit my latest resume to: "); document.querySelector('input[type="text"]')?.focus(); }}
+                      onClick={() => { setInput("Edit my latest resume to: "); (document.querySelector('input[type="text"]') as HTMLInputElement)?.focus(); }}
                       className="px-4 py-2 rounded-lg bg-primary text-white text-xs font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center gap-2"
                     >
                       <span>✨</span> Edit with AI
