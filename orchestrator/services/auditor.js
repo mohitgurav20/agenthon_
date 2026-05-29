@@ -69,10 +69,10 @@ function getPricingPlan(modelName) {
   if (lower.includes('llama') || lower.includes('groq')) {
     return PRICING_PLANS.groq;
   }
-  if (lower.includes('gemini-1.5-pro') || lower.includes('gemini-pro') || lower.includes('deep')) {
+  if (lower.includes('gemini-2.5-pro') || lower.includes('gemini-pro') || lower.includes('deep')) {
     return PRICING_PLANS['gemini-pro'];
   }
-  if (lower.includes('gemini-1.5-flash') || lower.includes('gemini-flash') || lower.includes('flash')) {
+  if (lower.includes('gemini-2.5-pro') || lower.includes('gemini-flash') || lower.includes('flash')) {
     return PRICING_PLANS['gemini-flash'];
   }
   if (lower.includes('claude') || lower.includes('sonnet') || lower.includes('validation')) {

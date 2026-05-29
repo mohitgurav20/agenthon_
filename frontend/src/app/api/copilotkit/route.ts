@@ -2,19 +2,43 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const ORCHESTRATOR_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
 
-// CopilotKit calls GET /api/copilotkit first for runtime discovery
 export const GET = async () => {
   return NextResponse.json({
-    status: 'ok',
-    runtime: 'custom',
     version: '1.0.0',
-    capabilities: ['chat'],
+    mode: 'sse',
+    agents: {
+      default: {
+        name: 'default',
+        className: 'BuiltInAgent',
+        description: 'Default Agent'
+      }
+    },
+    audioFileTranscriptionEnabled: false,
+    endpoints: { chat: '/api/copilotkit' },
   });
 };
 
 export const POST = async (req: NextRequest) => {
   try {
     const body = await req.json();
+    console.log('[CopilotKit POST] body:', JSON.stringify(body));
+
+    // CopilotKit 1.58 runtime info fetch over POST
+    if (body?.action === 'info' || body?.get === 'info' || (Object.keys(body).length === 0) || !body.messages || body.messages.length === 0) {
+      return NextResponse.json({
+        version: '1.0.0',
+        mode: 'sse',
+        agents: {
+          default: {
+            name: 'default',
+            className: 'BuiltInAgent',
+            description: 'Default Agent'
+          }
+        },
+        audioFileTranscriptionEnabled: false,
+        endpoints: { chat: '/api/copilotkit' },
+      });
+    }
 
     // Extract last user message from CopilotKit message format
     const messages: Array<{ role: string; content: string }> = body?.messages || [];

@@ -17,14 +17,14 @@ const MODELS = {
   fast: {
     name: 'groq-llama',
     provider: 'groq',
-    model: 'llama-3.1-70b-versatile',
+    model: 'llama-3.1-8b-instant',
     description: 'Ultra-fast routing, classification, simple tasks',
     maxTokens: 1024
   },
   deep: {
     name: 'gemini-pro',
     provider: 'gemini',
-    model: 'gemini-1.5-pro',
+    model: 'gemini-2.5-pro',
     description: 'Complex reasoning, analysis, multi-step planning',
     maxTokens: 4096
   },

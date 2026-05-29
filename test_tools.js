@@ -30,7 +30,7 @@ async function runTests() {
   const { GoogleGenerativeAI } = require('@google/generative-ai');
   try {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
     const result = await model.generateContent("Respond with exactly: 'Gemini Pro API Key is active and ready for data analysis.'");
     console.log({
       success: true,

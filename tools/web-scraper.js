@@ -100,6 +100,8 @@ async function simpleFetch(url) {
       timestamp: new Date().toISOString()
     };
   }
+}
+
 // Dedicated LinkedIn Job Scraper (Fast Regex extraction without JSDOM)
 async function scrapeLinkedInJob(url) {
   try {

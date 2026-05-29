@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #05050a;
-  --color-foreground: #e2e8f0;
-  --color-surface: #0d0d14;
-  --color-surface-hover: #111118;
-  --color-border: #1a1a2e;
-  --color-primary: #7c3aed;
-  --color-secondary: #06b6d4;
-  --color-accent: #f59e0b;
+  --color-background: #0b0c0e;
+  --color-foreground: #f7f5ee;
+  --color-surface: #121315;
+  --color-surface-hover: #1a1b1e;
+  --color-border: #2c2f33;
+  --color-primary: #e2ede6;
+  --color-secondary: #74777b;
+  --color-accent: #d5cec4;
 }
 
 @layer base {
@@ -32,4 +32,23 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* Hide CopilotKit default floating popup button */
+.copilotKitButton,
+.copilotKitPopup,
+.copilotKitButtonIcon,
+.copilotKitButtonIconOpen,
+.copilotKitButtonIconClose,
+button.copilotKitButton,
+div.copilotKitPopup {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  position: absolute !important;
+  z-index: -9999 !important;
 }

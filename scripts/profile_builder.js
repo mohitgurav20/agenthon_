@@ -42,7 +42,7 @@ async function conductInterviewStep(messages, userId) {
         if (lastUserMsg) {
             try {
                 const extractionModel = genAI.getGenerativeModel({ 
-                    model: "gemini-1.5-pro",
+                    model: "gemini-2.5-pro",
                     generationConfig: { responseMimeType: "application/json" }
                 });
                 
@@ -76,7 +76,7 @@ Your goal is to conduct a natural, engaging, and friendly chat interview with th
 - If they mention projects, dig into their tech stack, their role, and key challenges solved.
 - When you have gathered substantial profile facts (skills, databases, projects), thank them and indicate that the database is fully seeded.`;
 
-        const chatModel = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+        const chatModel = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
         
         // Convert messages to Gemini Content structure
         const contents = messages.map(m => ({

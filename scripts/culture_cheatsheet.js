@@ -22,7 +22,7 @@ async function generateCultureCard(companyName, jobDescription) {
     console.log(`\n📋 [CultureCard] Compiling cheat-sheet for ${companyName}...`);
 
     // 1. Extract core values from the job description using Gemini
-    const extractModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const extractModel = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
     const extractPrompt = `
 You are an expert HR recruiter. Analyze the following job description for ${companyName} and extract the top 3 core corporate values or cultural traits they are looking for.
 Return ONLY a JSON array of strings, nothing else. Example: ["Fast-paced", "Data-driven", "Collaborative"]
@@ -58,7 +58,7 @@ ${jobDescription}
     }));
 
     // 3. Generate the final cheat sheet
-    const cheatSheetModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const cheatSheetModel = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
     const cheatSheetPrompt = `
 You are a career coach preparing a candidate for an interview at ${companyName}.
 Using the extracted company culture values and the candidate's matching projects from our database, generate a concise "Culture Fit Cheat-Sheet".

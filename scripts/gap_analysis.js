@@ -20,7 +20,7 @@ async function generateGapAnalysis(jobDescription, candidateId = null) {
     console.log(`\n🔍 [GapAnalysis] Analyzing job description for semantic gaps...`);
 
     // 1. Extract required hard skills from the job description
-    const extractModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const extractModel = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
     const extractPrompt = `
 Analyze the following job description and extract a definitive list of hard technical skills, tools, frameworks, and specific domain knowledge required.
 Return ONLY a JSON array of strings. Example: ["React", "Node.js", "Docker", "AWS", "PostgreSQL", "Redis"]
@@ -53,7 +53,7 @@ ${jobDescription}
         : "No significant technical projects found in database.";
 
     // 3. Generate the Gap Analysis and Micro-Learning Cards
-    const analysisModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const analysisModel = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
     const analysisPrompt = `
 You are a technical career coach. Compare the Required Skills for a job against the Candidate's Profile Context.
 Identify exactly which Required Skills are MISSING from the candidate's profile.

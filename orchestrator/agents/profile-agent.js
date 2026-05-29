@@ -11,6 +11,7 @@
 
 const { generateResponse } = require('../router');
 const agentsConfig = require('../config/agents.json');
+const { extractLinkedInProfile, extractGithubProfile } = require('../../tools/profile-extractor');
 
 const MEMORY_API = process.env.MEMORY_API_URL || 'http://localhost:3001';
 
@@ -167,6 +168,49 @@ Format a gorgeous markdown response summarizing this GitHub import. Highlight:
       answer,
       sources: {
         memoriesUsed: ingResult.milestones.length,
+        ragDocsUsed: 0,
+        webResultsUsed: 0
+      },
+      latencyMs: Date.now() - startTime
+    };
+  }
+
+  // Handle LinkedIn Extraction
+  const linkedInRegex = /(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/([a-zA-Z0-9_\-\.]+)/i;
+  const linkedInMatch = userInput.match(linkedInRegex);
+  
+  if (linkedInMatch) {
+    const linkedinUrl = linkedInMatch[0];
+    const profileData = await extractLinkedInProfile(linkedinUrl);
+    
+    const milestonesToStore = [
+      `LinkedIn Profile: ${profileData.headline}`,
+      `Experience: ${profileData.experience.map(e => `${e.title} at ${e.company}`).join(', ')}`,
+      `Education: ${profileData.education.map(e => e.degree).join(', ')}`,
+      `Skills extracted from LinkedIn: ${profileData.skills.join(', ')}`
+    ];
+    
+    // Store in Mem0
+    await Promise.all(milestonesToStore.map(fact => storeFact(fact, userId)));
+    
+    const synthesisPrompt = `You are the Profile Ingestion Agent. We just performed a simulated LinkedIn Profile Extraction.
+Profile Headline: ${profileData.headline}
+Experience: ${profileData.experience.map(e => e.title).join(', ')}
+Extracted Skills: ${profileData.skills.join(', ')}
+
+Format a gorgeous markdown response summarizing this LinkedIn import. Highlight:
+1. **LinkedIn Ingestion Complete**: Confirming we extracted and saved experience and skills to Mem0.
+2. **Profile Snapshot**: Summarize the headline and key experience.
+3. **Core Skills Identified**: Display the extracted skills in elegant badge layouts.
+4. **Next Step - Resume Generation**: Tell the user that with their GitHub/LinkedIn data, they can now generate a top-notch ATS-optimized resume.`;
+
+    const answer = await generateResponse(synthesisPrompt, "You are a professional, premium career database assistant.", 'research', sessionId);
+
+    return {
+      agent: 'profile',
+      answer,
+      sources: {
+        memoriesUsed: milestonesToStore.length,
         ragDocsUsed: 0,
         webResultsUsed: 0
       },

@@ -42,7 +42,7 @@ async function analyzeData({ table, query = {}, analysisType = 'trend', maxRows 
 
     // Use Gemini to perform complex statistical analysis and generate chart data
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' }); // Need reasoning power
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' }); // Need reasoning power
 
     const prompt = `You are a Senior Data Analyst. Analyze the following dataset (max 1000 rows).
 Dataset from table '${table}':

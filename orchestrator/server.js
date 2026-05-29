@@ -19,10 +19,15 @@ const express = require('express');
 const cors = require('cors');
 const { processInput } = require('./index');
 const { flush } = require('./langfuse');
+const { generateReport, generateSummary, generateResume } = require('../tools/report-generator');
 const { getSessionSummary, getGlobalSummary } = require('./services/auditor');
-const { getActiveModels, setActiveModels, MODELS } = require('./router');
+const { getActiveModels, setActiveModels, MODELS, generateResponse } = require('./router');
 const { createClient } = require('@supabase/supabase-js');
 const os = require('os');
+const ws = require('ws');
+
+// Polyfill WebSocket for Supabase Realtime in Node 20
+global.WebSocket = ws;
 
 const app = express();
 const PORT = process.env.ORCHESTRATOR_PORT || 3002;
@@ -43,6 +48,15 @@ const memoryApi = require('../memory/memory_api');
 
 app.use('/', toolsApi);
 app.use('/', memoryApi);
+
+// Friendly root route
+app.get('/', (req, res) => {
+  res.json({
+    status: 'online',
+    service: 'Agent Zero API Monolith',
+    message: 'System is fully operational. Proceed to the frontend dashboard.'
+  });
+});
 
 // ── Diagnostics Health Check ──
 app.get('/api/health', async (req, res) => {
@@ -159,7 +173,7 @@ app.get('/api/profile/milestones', async (req, res) => {
     const response = await fetch(`${MEMORY_API}/memory/retrieve`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: 'skills, projects, certifications, experiences, career milestones', userId })
+      body: JSON.stringify({ query: 'skills projects achievements experiences education profile about', userId })
     });
     if (!response.ok) throw new Error(`Memory API returned ${response.status}`);
     const data = await response.json();
@@ -238,7 +252,7 @@ app.get('/api/portfolio/generate', async (req, res) => {
     if (memories.length === 0) {
       memories = [
         { memory: "Skills: Demonstrated production expertise in React, Node.js, Next.js, and TypeScript." },
-        { memory: "Project: Built 'ResumeVault AI' - career command center with 95% stars on GitHub." },
+        { memory: "Project: Built 'FLUX AI' - career command center with 95% stars on GitHub." },
         { memory: "Milestone: Deployed autonomous container sandbox ATS simulator and validator feedback loop." },
         { memory: "Project: Integrated Supabase pgvector hybrid search index (3072 dimensions) with Letta episodic profiles." }
       ];
@@ -582,7 +596,7 @@ app.get('/api/portfolio/generate', async (req, res) => {
       </div>
       <div class="terminal-body" id="term-body">
         <div class="terminal-welcome">
-          ResumeVault AI autonomous shell loaded.<br>
+          FLUX AI autonomous shell loaded.<br>
           Type <strong style="color: #fff">'help'</strong> to see available console actions.
         </div>
         <div id="term-log"></div>
@@ -732,6 +746,69 @@ app.get('/api/analytics/funnel', (req, res) => {
   });
 });
 
+// GET /api/jobs/recommend -> Expose AI-powered job recommendations based on user skills
+app.get('/api/jobs/recommend', async (req, res) => {
+  const userId = req.query.userId || 'agent-zero-user';
+  try {
+    const MEMORY_API = process.env.MEMORY_API_URL || 'http://localhost:3001';
+    let userContext = '';
+    try {
+      const memRes = await fetch(`${MEMORY_API}/memory/retrieve`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: 'skills, programming languages, technologies, experience', userId })
+      });
+      if (memRes.ok) {
+        const memData = await memRes.json();
+        const results = memData.results || memData.result || [];
+        userContext = results.map(r => r.memory || r.text || r.content).join('. ');
+      }
+    } catch(e) {}
+    
+    const { generateResponse } = require('./router');
+    const prompt = `You are an expert AI Tech Recruiter.
+The user has the following background and skills:
+${userContext || 'React, Node.js, Next.js, Full Stack Development'}
+
+Recommend 3 highly relevant real-world job roles that perfectly match their profile. 
+Be creative and specific to their actual skills.
+Return ONLY a valid JSON array of objects with the following schema, and nothing else:
+[
+  {
+    "title": "Job Title (e.g., Senior Full Stack Engineer)",
+    "company": "Company Name (e.g., Vercel, Supabase, OpenAI)",
+    "url": "https://company.com/careers",
+    "match": 95, 
+    "status": "idle",
+    "keywords": ["React", "Node.js", "AI", "Postgres"]
+  }
+]
+No markdown formatting or extra text.`;
+
+    const aiResponse = await generateResponse(prompt, '', 'fast', 'job-search');
+    let jobs = [];
+    try {
+      const jsonMatch = aiResponse.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        jobs = JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error("No JSON array found in response");
+      }
+    } catch (e) {
+      console.warn("JSON Parse failed for job recommendations:", e);
+      jobs = [
+        { title: "AI Full Stack Engineer", company: "Anthropic", url: "https://anthropic.com", match: 96, status: "idle", keywords: ["AI", "React", "Node.js"] },
+        { title: "Frontend Platform Engineer", company: "Vercel", url: "https://vercel.com", match: 92, status: "idle", keywords: ["Next.js", "React", "TypeScript"] },
+        { title: "Backend Systems Developer", company: "Supabase", url: "https://supabase.com", match: 89, status: "idle", keywords: ["Postgres", "Node.js", "Go"] }
+      ];
+    }
+    
+    res.json(jobs);
+  } catch (err) {
+    console.error('[Jobs Recommend]', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST /api/skills/gap-analysis -> Compare candidate Mem0 skills vs. incoming job description
 app.post('/api/skills/gap-analysis', async (req, res) => {
   const { jobDescription, userId = 'agent-zero-user' } = req.body;
@@ -772,146 +849,56 @@ app.post('/api/skills/gap-analysis', async (req, res) => {
   // Deduplicate
   candidateSkills = [...new Set(candidateSkills)].filter(s => s.length >= 2 && s.length <= 30);
 
-  // 2. Extract required skills from the JD using keyword matching
-  const jdLower = jobDescription.toLowerCase();
-  const techKeywordMap = [
-    // Languages
-    { name: 'JavaScript', aliases: ['javascript', 'js'] },
-    { name: 'TypeScript', aliases: ['typescript', 'ts'] },
-    { name: 'Python', aliases: ['python', 'py'] },
-    { name: 'Java', aliases: ['java'] },
-    { name: 'Go', aliases: ['golang', ' go '] },
-    { name: 'Rust', aliases: ['rust'] },
-    { name: 'C++', aliases: ['c++', 'cpp'] },
-    // Frontend
-    { name: 'React', aliases: ['react', 'react.js', 'reactjs'] },
-    { name: 'Next.js', aliases: ['next.js', 'nextjs', 'next js'] },
-    { name: 'Vue', aliases: ['vue', 'vue.js', 'vuejs'] },
-    { name: 'Angular', aliases: ['angular'] },
-    { name: 'Tailwind', aliases: ['tailwind', 'tailwindcss'] },
-    { name: 'HTML', aliases: ['html', 'html5'] },
-    { name: 'CSS', aliases: ['css', 'css3', 'scss', 'sass'] },
-    // Backend
-    { name: 'Node.js', aliases: ['node.js', 'nodejs', 'node js'] },
-    { name: 'Express', aliases: ['express', 'expressjs', 'express.js'] },
-    { name: 'FastAPI', aliases: ['fastapi', 'fast api'] },
-    { name: 'Django', aliases: ['django'] },
-    { name: 'Flask', aliases: ['flask'] },
-    // Databases
-    { name: 'PostgreSQL', aliases: ['postgresql', 'postgres', 'psql'] },
-    { name: 'MySQL', aliases: ['mysql'] },
-    { name: 'MongoDB', aliases: ['mongodb', 'mongo'] },
-    { name: 'Redis', aliases: ['redis'] },
-    { name: 'Supabase', aliases: ['supabase'] },
-    { name: 'SQLite', aliases: ['sqlite'] },
-    // Cloud / DevOps
-    { name: 'Docker', aliases: ['docker', 'dockerfile', 'container'] },
-    { name: 'Kubernetes', aliases: ['kubernetes', 'k8s'] },
-    { name: 'AWS', aliases: ['aws', 'amazon web services', 'ec2', 's3', 'lambda'] },
-    { name: 'GCP', aliases: ['gcp', 'google cloud'] },
-    { name: 'Azure', aliases: ['azure', 'microsoft azure'] },
-    { name: 'CI/CD', aliases: ['ci/cd', 'cicd', 'github actions', 'jenkins', 'gitlab ci'] },
-    { name: 'Git', aliases: ['git', 'github', 'gitlab', 'bitbucket'] },
-    // AI/ML
-    { name: 'Machine Learning', aliases: ['machine learning', 'ml', 'scikit-learn', 'sklearn'] },
-    { name: 'LLM', aliases: ['llm', 'large language model', 'gpt', 'openai', 'claude'] },
-    { name: 'RAG', aliases: ['rag', 'retrieval augmented', 'vector search', 'pgvector', 'embeddings'] },
-    { name: 'REST API', aliases: ['rest api', 'restful', 'rest'] },
-    { name: 'GraphQL', aliases: ['graphql'] },
-    // Soft / Misc
-    { name: 'Agile', aliases: ['agile', 'scrum', 'sprint'] },
-    { name: 'Linux', aliases: ['linux', 'unix', 'bash', 'shell script'] },
-  ];
+  // 2. AI-Powered Skill Gap Analysis
+  const prompt = `
+You are an expert technical recruiter and AI career coach.
+Analyze the Skill Gap between the following Candidate Skills and the Job Description.
 
-  const jdRequiredSkills = techKeywordMap
-    .filter(({ aliases }) => aliases.some(alias => jdLower.includes(alias)))
-    .map(({ name }) => name);
+Candidate Skills:
+${candidateSkills.join(', ')}
 
-  // 3. Classify each JD skill against candidate skills
-  const candidateLower = candidateSkills.map(s => s.toLowerCase());
+Job Description:
+${jobDescription}
 
-  const matched = [];
-  const partial = [];
-  const missing = [];
+Output a strict JSON object with EXACTLY this structure, no markdown formatting, no comments:
+{
+  "readinessScore": <number 0-100>,
+  "totalRequiredSkills": <number>,
+  "matched": [ {"skill": "skill_name"} ],
+  "partial": [ {"skill": "skill_name", "note": "how to bridge it"} ],
+  "missing": [ {"skill": "skill_name", "suggestion": "youtube or course link recommendation"} ],
+  "summary": "<short 1-2 sentence summary of fit>"
+}
+`;
 
-  const upskillMap = {
-    'AWS': 'Complete the free AWS Cloud Practitioner Essentials course (6h) on aws.amazon.com/training',
-    'Kubernetes': 'Follow the official Kubernetes Basics tutorial at kubernetes.io/docs/tutorials/kubernetes-basics',
-    'Redis': 'Redis University offers a free Redis 101 course at university.redis.com',
-    'Machine Learning': 'Take the fast.ai Practical Deep Learning course for immediate hands-on ML skills',
-    'GCP': 'Google Cloud Skills Boost has free GCP fundamentals paths at cloudskillsboost.google',
-    'Azure': 'Microsoft Learn Azure Fundamentals (AZ-900) path is free at learn.microsoft.com',
-    'Go': 'Go\'s official tour at tour.golang.org takes ~4 hours and covers all fundamentals',
-    'Rust': 'The Rust Book (doc.rust-lang.org/book) is the best free resource to learn Rust',
-    'CI/CD': 'GitHub Actions has an official quickstart guide — set up a workflow in under 30 minutes',
-    'Django': 'Django\'s official tutorial at docs.djangoproject.com covers a complete web app in ~4h',
-    'FastAPI': 'FastAPI\'s official tutorial at fastapi.tiangolo.com is the quickest path to mastery',
-    'Vue': 'Vue\'s official guide at vuejs.org/guide covers components and reactivity in ~3h',
-    'Angular': 'Angular\'s official Tour of Heroes tutorial covers full framework basics',
-    'GraphQL': 'Apollo GraphQL Odyssey (odyssey.apollographql.com) has free interactive GraphQL courses',
-    'Docker': 'Docker\'s official Getting Started tutorial takes under 2h at docs.docker.com/get-started',
-    'MongoDB': 'MongoDB University offers free M001 MongoDB Basics course at university.mongodb.com',
-    'MySQL': 'MySQL 8.0 Reference Manual + W3Schools SQL exercises are a fast-track combo',
-    'Linux': 'Linux Journey (linuxjourney.com) is a free interactive Linux learning platform',
-    'LLM': 'DeepLearning.AI\'s free short courses on LLMs cover prompting, RAG, and fine-tuning in hours',
-    'RAG': 'Build a RAG app with Supabase + pgvector — you already have the infrastructure!',
-    'Agile': 'Scrum.org offers free Scrum guides and the PSM I assessment prep materials',
-  };
-
-  jdRequiredSkills.forEach(skill => {
-    const skillLower = skill.toLowerCase();
-    const directMatch = candidateLower.some(cs =>
-      cs === skillLower || cs.includes(skillLower) || skillLower.includes(cs)
-    );
-
-    if (directMatch) {
-      matched.push({ skill });
-    } else {
-      // Check for partial / related match
-      const isPartial = (
-        (skillLower.includes('node') && candidateLower.includes('javascript')) ||
-        (skillLower.includes('react') && candidateLower.includes('javascript')) ||
-        (skillLower.includes('next') && candidateLower.includes('react')) ||
-        (skillLower.includes('postgres') && candidateLower.includes('supabase')) ||
-        (skillLower.includes('rag') && candidateLower.includes('supabase')) ||
-        (skillLower.includes('rest') && candidateLower.includes('node.js')) ||
-        (skillLower.includes('ci/cd') && candidateLower.includes('git')) ||
-        (skillLower.includes('llm') && candidateLower.includes('python')) ||
-        (skillLower.includes('machine learning') && candidateLower.includes('python'))
-      );
-
-      if (isPartial) {
-        partial.push({
-          skill,
-          note: `Related experience detected — bridge this gap by applying your existing skills directly to ${skill} projects.`
-        });
-      } else {
-        missing.push({
-          skill,
-          suggestion: upskillMap[skill] || `Search "${skill} for beginners" on YouTube or freeCodeCamp to find a quality free resource.`
-        });
-      }
-    }
-  });
-
-  const totalRequired = jdRequiredSkills.length || 1;
-  const readinessScore = Math.round(((matched.length + partial.length * 0.5) / totalRequired) * 100);
-
-  res.json({
-    success: true,
-    timestamp: new Date().toISOString(),
-    readinessScore,
-    totalRequiredSkills: jdRequiredSkills.length,
-    matched,
-    partial,
-    missing,
-    candidateSkills: candidateSkills.slice(0, 20),
-    summary: readinessScore >= 80
-      ? `Strong fit! You match ${matched.length}/${jdRequiredSkills.length} required skills. This role is within your reach.`
-      : readinessScore >= 50
-      ? `Moderate fit. You match ${matched.length}/${jdRequiredSkills.length} skills. Bridging ${missing.length} gaps could take 2–4 weeks.`
-      : `Developing fit. Focus on ${missing.slice(0, 3).map(m => m.skill).join(', ')} first to significantly boost your match score.`
-  });
+  try {
+    const aiResponse = await generateResponse(prompt, 'You are a precise JSON-only API.', 'research', 'gap-analysis');
+    const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('No JSON found in AI response');
+    
+    const parsed = JSON.parse(jsonMatch[0]);
+    
+    res.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      candidateSkills: candidateSkills.slice(0, 20),
+      ...parsed
+    });
+  } catch (error) {
+    console.error('[GapAnalysis] AI Gap Analysis failed:', error);
+    // Fallback if AI fails completely
+    res.json({
+      success: false,
+      timestamp: new Date().toISOString(),
+      readinessScore: 0,
+      totalRequiredSkills: 0,
+      matched: [],
+      partial: [],
+      missing: [{ skill: 'AI Analysis Failed', suggestion: 'Check backend logs.' }],
+      candidateSkills: candidateSkills.slice(0, 20),
+      summary: 'AI analysis failed.'
+    });
+  }
 });
 
 // ── Supabase RAG Documents Explorer Endpoints ──
@@ -923,7 +910,7 @@ app.post('/api/rag/search', async (req, res) => {
   if (!supabase) {
     // Return demo docs if Supabase not configured
     const demoDocs = [
-      { id: '1', content: 'ResumeVault AI career guideline: Always quantify achievements with metrics. Use action verbs like "designed", "implemented", "optimized". Keep resume to 1 page for < 5 years experience.', metadata: { source: 'resume_guidelines.pdf', type: 'guideline' }, created_at: new Date().toISOString() },
+      { id: '1', content: 'FLUX AI career guideline: Always quantify achievements with metrics. Use action verbs like "designed", "implemented", "optimized". Keep resume to 1 page for < 5 years experience.', metadata: { source: 'resume_guidelines.pdf', type: 'guideline' }, created_at: new Date().toISOString() },
       { id: '2', content: 'ATS Optimization: Modern ATS systems parse PDFs using pdftotext. Avoid tables, images, and multi-column layouts. Use standard section headers: Experience, Education, Skills, Projects.', metadata: { source: 'ats_best_practices.pdf', type: 'guideline' }, created_at: new Date().toISOString() },
       { id: '3', content: 'Software Engineer Intern - Figma: Requirements: React, TypeScript, Node.js, GraphQL, REST APIs, unit testing. Nice to have: Design systems, Figma Plugin API, Postgres.', metadata: { source: 'figma_jd.txt', type: 'job_description' }, created_at: new Date().toISOString() },
       { id: '4', content: 'Backend Engineer - Vercel: Required: Node.js, Go or Rust, PostgreSQL, Docker, Kubernetes, CI/CD pipelines. AWS or GCP experience preferred. Distributed systems experience a plus.', metadata: { source: 'vercel_jd.txt', type: 'job_description' }, created_at: new Date().toISOString() },
@@ -981,7 +968,7 @@ app.post('/api/rag/seed', async (req, res) => {
   if (!supabase) return res.json({ success: false, message: 'Supabase not configured' });
 
   const seedDocs = [
-    { content: 'ResumeVault AI career guideline: Always quantify achievements with metrics. Use action verbs like "designed", "implemented", "optimized". Keep resume to 1 page for < 5 years experience.', metadata: { source: 'resume_guidelines.pdf', type: 'guideline' } },
+    { content: 'FLUX AI career guideline: Always quantify achievements with metrics. Use action verbs like "designed", "implemented", "optimized". Keep resume to 1 page for < 5 years experience.', metadata: { source: 'resume_guidelines.pdf', type: 'guideline' } },
     { content: 'ATS Optimization: Modern ATS systems parse PDFs using pdftotext. Avoid tables, images, and multi-column layouts. Use standard section headers: Experience, Education, Skills, Projects.', metadata: { source: 'ats_best_practices.pdf', type: 'guideline' } },
     { content: 'Software Engineer Intern - Figma: Requirements: React, TypeScript, Node.js, GraphQL, REST APIs. Nice to have: Design systems, Figma Plugin API, Postgres.', metadata: { source: 'figma_jd.txt', type: 'job_description' } },
     { content: 'Backend Engineer - Vercel: Required: Node.js, PostgreSQL, Docker, Kubernetes, CI/CD. AWS or GCP experience preferred.', metadata: { source: 'vercel_jd.txt', type: 'job_description' } },
@@ -994,136 +981,520 @@ app.post('/api/rag/seed', async (req, res) => {
   res.json({ success: true, message: `Seeded ${seedDocs.length} documents into Supabase.` });
 });
 
+// POST /api/demo/import-profile -> Deep-scrape GitHub, CLEAR old memories, use AI to organize, store fresh profile
+app.post('/api/demo/import-profile', async (req, res) => {
+  const { githubUsername, linkedinUsername } = req.body;
+  if (!githubUsername) return res.status(400).json({ error: 'Missing githubUsername' });
+  const MEMORY_API = process.env.MEMORY_API_URL || 'http://localhost:3001';
+  const userId = 'agent-zero-user';
+  
+  // Try to load Tavily for LinkedIn search
+  let searchWeb = null;
+  try {
+    const tavily = require('../tools/tavily-search.js');
+    searchWeb = tavily.searchWeb;
+  } catch(e) { console.warn('Tavily tool not found'); }
+
+  try {
+    // ── STEP 1: Deep GitHub scrape (user + repos + READMEs + events) ──
+    const ghHeaders = { 'Accept': 'application/vnd.github.v3+json', 'User-Agent': 'FLUX-AI', ...(process.env.GITHUB_TOKEN ? { 'Authorization': `Bearer ${process.env.GITHUB_TOKEN}` } : {}) };
+    
+    const [userRes, reposRes, eventsRes] = await Promise.all([
+      fetch(`https://api.github.com/users/${githubUsername}`, { headers: ghHeaders }),
+      fetch(`https://api.github.com/users/${githubUsername}/repos?sort=pushed&per_page=30&type=owner`, { headers: ghHeaders }),
+      fetch(`https://api.github.com/users/${githubUsername}/events/public?per_page=30`, { headers: ghHeaders })
+    ]);
+
+    let user = {};
+    let repos = [];
+    let events = [];
+
+    if (userRes.ok) {
+      user = await userRes.json();
+      repos = reposRes.ok ? await reposRes.json() : [];
+      events = eventsRes.ok ? await eventsRes.json() : [];
+    } else {
+      console.warn(`[Import] GitHub API fetch failed for '${githubUsername}' (Status: ${userRes.status}). Proceeding with only LinkedIn/Tavily data.`);
+    }
+
+    // Basic user info
+    const name = user.name || linkedinUsername || githubUsername;
+    const bio = user.bio || '';
+    const company = (user.company || '').replace('@', '');
+    const location = user.location || '';
+    const email = user.email || `${githubUsername}@github.com`;
+    const githubUrl = `github.com/${githubUsername}`;
+    const followers = user.followers || 0;
+    const publicRepos = user.public_repos || 0;
+    const createdAt = user.created_at ? new Date(user.created_at).getFullYear() : '';
+
+    // ── STEP 2: Parse repos deeply ──
+    const nonForkRepos = repos.filter(r => !r.fork);
+    const allLanguages = new Set();
+    const allTopics = new Set();
+    const repoDetails = [];
+
+    for (const repo of nonForkRepos) {
+      if (repo.language) allLanguages.add(repo.language);
+      (repo.topics || []).forEach(t => allTopics.add(t));
+      repoDetails.push({
+        name: repo.name,
+        description: repo.description || '',
+        language: repo.language || 'Unknown',
+        stars: repo.stargazers_count || 0,
+        forks: repo.forks_count || 0,
+        topics: (repo.topics || []).join(', '),
+        updatedAt: repo.pushed_at,
+        homepage: repo.homepage || '',
+        size: repo.size
+      });
+    }
+
+    // ── STEP 3: Fetch README for top repos (by stars then recency) ──
+    const topRepos = [...nonForkRepos]
+      .sort((a, b) => (b.stargazers_count || 0) - (a.stargazers_count || 0))
+      .slice(0, 15);
+
+    const readmeContents = {};
+    await Promise.all(topRepos.map(async (repo) => {
+      try {
+        const readmeRes = await fetch(`https://api.github.com/repos/${githubUsername}/${repo.name}/readme`, { headers: ghHeaders });
+        if (readmeRes.ok) {
+          const readmeData = await readmeRes.json();
+          // Decode base64 README content
+          const content = Buffer.from(readmeData.content || '', 'base64').toString('utf8');
+          // Truncate to 1500 chars to stay within LLM context limits
+          readmeContents[repo.name] = content.substring(0, 1500);
+        }
+      } catch { /* skip */ }
+    }));
+
+    // ── STEP 4: Parse recent activity ──
+    const recentActivity = [];
+    const pushEvents = events.filter(e => e.type === 'PushEvent').slice(0, 30);
+    const prEvents = events.filter(e => e.type === 'PullRequestEvent').slice(0, 15);
+    const issueEvents = events.filter(e => e.type === 'IssuesEvent').slice(0, 15);
+    
+    pushEvents.forEach(e => {
+      const commits = e.payload?.commits || [];
+      commits.forEach(c => {
+        if (c.message && !c.message.startsWith('Merge')) {
+          recentActivity.push(`Commit in ${e.repo?.name?.split('/')[1] || 'repo'}: ${c.message.substring(0, 100)}`);
+        }
+      });
+    });
+    prEvents.forEach(e => {
+      recentActivity.push(`PR ${e.payload?.action}: "${e.payload?.pull_request?.title}" in ${e.repo?.name?.split('/')[1] || 'repo'}`);
+    });
+
+    // ── STEP 4.5: Fetch LinkedIn Data via Tavily if provided ──
+    let linkedinData = null;
+    if (linkedinUsername && searchWeb) {
+      console.log(`[Import] Fetching LinkedIn data for ${linkedinUsername}...`);
+      const query = `site:linkedin.com/in/${linkedinUsername} experience OR education OR skills`;
+      const searchRes = await searchWeb(query, { maxResults: 10, searchDepth: 'advanced', includeAnswer: true });
+      if (searchRes && searchRes.success) {
+        linkedinData = {
+          answer: searchRes.answer,
+          results: searchRes.results.map(r => ({ title: r.title, content: r.content }))
+        };
+      }
+    }
+
+    // ── STEP 5: Send ALL data to Groq LLM to organize into career memories ──
+    const rawDataPayload = {
+      name, bio, company, location, email, githubUrl,
+      linkedin: linkedinData,
+      followers, publicRepos, memberSince: createdAt,
+      languages: Array.from(allLanguages),
+      topics: Array.from(allTopics),
+      repos: repoDetails,
+      readmes: readmeContents,
+      recentActivity: recentActivity.slice(0, 50)
+    };
+
+    let aiOrganizedMemories = [];
+    try {
+      const orgPrompt = `You are an expert AI Memory Organizer.
+Your task is to take this raw, unstructured GitHub data and extract all meaningful career information into atomic "Memory Tokens".
+
+FORMAT REQUIREMENTS:
+Each memory MUST be a single, standalone string starting with a category tag.
+Categories: [PROFILE, SUMMARY, PROJECT, SKILL, EXPERIENCE, EDUCATION, ACHIEVEMENT]
+
+CRITICAL EXTRACTION RULES:
+- DO NOT SUMMARIZE. You must create a separate PROJECT memory for EVERY single repository provided in the data.
+- Extract EVERY SINGLE detail from A to Z. Leave absolutely nothing behind.
+- If a README describes features, tech stack, or architecture, incorporate that into the project description.
+- Group related skills (e.g. "SKILL: Cloud & DevOps — AWS, Docker, Kubernetes, CI/CD")
+- Prioritize LinkedIn data for EXPERIENCE and EDUCATION if it exists
+- Be extremely thorough — extract 30-50 memories minimum. Do not miss any repository.
+- Return ONLY a valid JSON array of strings, nothing else
+
+Raw GitHub Data:
+${JSON.stringify(rawDataPayload, null, 1)}`;
+
+      const { generateResponse } = require('./router');
+      const raw = await generateResponse(orgPrompt, '', 'flash', 'import-profile');
+      
+      const jsonMatch = raw.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        aiOrganizedMemories = JSON.parse(jsonMatch[0]);
+        console.log(`[Import] AI organized ${aiOrganizedMemories.length} memories for ${githubUsername}`);
+      }
+    } catch (err) {
+      console.error('[Import] AI organization failed, falling back to basic:', err.message);
+    }
+
+    // ── STEP 6: Fallback if AI fails ──
+    if (aiOrganizedMemories.length === 0) {
+      // Basic fallback
+      if (bio) aiOrganizedMemories.push(`SUMMARY: ${name} — ${bio}`);
+      if (allLanguages.size > 0) aiOrganizedMemories.push(`SKILL: Programming Languages — ${Array.from(allLanguages).join(', ')}`);
+      if (allTopics.size > 0) aiOrganizedMemories.push(`SKILL: Topics & Frameworks — ${Array.from(allTopics).join(', ')}`);
+      nonForkRepos.forEach(repo => {
+        aiOrganizedMemories.push(`PROJECT: ${repo.name} — ${repo.description || 'Open source project'}${repo.language ? ' (' + repo.language + ')' : ''}${repo.stargazers_count > 0 ? ' ⭐' + repo.stargazers_count : ''}`);
+      });
+      if (followers > 0) aiOrganizedMemories.push(`ACHIEVEMENT: ${followers} GitHub followers, ${publicRepos} public repositories`);
+      if (linkedinData && linkedinData.answer) {
+        aiOrganizedMemories.push(`EXPERIENCE: LinkedIn Summary — ${linkedinData.answer.substring(0, 500)}`);
+      }
+    }
+
+    // Build profile memory (special prefix so resume can extract it)
+    const profileMem = `PROFILE: name=${name} | email=${email} | github=${githubUrl} | location=${location}${bio ? ' | bio=' + bio : ''}${company ? ' | company=' + company : ''}`;
+
+    // Build milestone cards for the frontend
+    const importedMilestones = [];
+    importedMilestones.push({ id: 'profile', title: name.substring(0, 20), category: 'Profile', desc: `${name}${bio ? ' — ' + bio : ''}${location ? ' from ' + location : ''}` });
+
+    const categoryMap = { 'SKILL': 'Language', 'PROJECT': 'Project', 'ACHIEVEMENT': 'Achievement', 'EXPERIENCE': 'Experience', 'EDUCATION': 'Education', 'CERTIFICATION': 'Certification', 'SUMMARY': 'Profile' };
+    aiOrganizedMemories.forEach((mem, idx) => {
+      const prefix = (mem.match(/^(\w+):/)?.[1] || 'OTHER').toUpperCase();
+      const category = categoryMap[prefix] || 'Other';
+      const content = mem.replace(/^\w+:\s*/, '');
+      importedMilestones.push({
+        id: `ai-${idx}`,
+        title: content.substring(0, 25),
+        category,
+        desc: mem
+      });
+    });
+
+    // ── STEP 7: CLEAR old memories FIRST (synchronous, not background) ──
+    try {
+      const { MemoryClient } = require('mem0ai');
+      const mem0 = new MemoryClient({ apiKey: process.env.MEM0_API_KEY });
+      // Try filters syntax first (newer SDK), fallback to top-level
+      let mems = [];
+      try {
+        const allMems = await mem0.getAll({ filters: { user_id: userId } });
+        mems = allMems.results || allMems || [];
+      } catch {
+        try {
+          const allMems = await mem0.getAll({ user_id: userId });
+          mems = allMems.results || allMems || [];
+        } catch { mems = []; }
+      }
+      if (mems.length > 0) {
+        await Promise.all(mems.map(m => mem0.delete(m.id).catch(() => {})));
+        console.log(`[Import] Cleared ${mems.length} old memories for ${userId}`);
+      }
+    } catch (e) {
+      console.warn('[Import] Could not clear old memories:', e.message);
+    }
+
+    // Respond to frontend with the AI-organized data
+    res.json({ success: true, message: `AI organized ${importedMilestones.length} career facts from ${nonForkRepos.length} repos`, milestones: importedMilestones, username: githubUsername, name });
+
+    // ── STEP 8: Store fresh AI-organized memories in Mem0 (background) ──
+    const allMemoryStrings = [profileMem, ...aiOrganizedMemories];
+    (async () => {
+      await Promise.all(allMemoryStrings.map(text =>
+        fetch(`${MEMORY_API}/memory/store`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, userId })
+        }).catch(e => console.warn('[BG Mem0 Store]', e.message))
+      ));
+      console.log(`[Import] Stored ${allMemoryStrings.length} AI-organized memories for ${githubUsername}`);
+    })();
+
+  } catch (error) {
+    console.error('Import Profile Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ── A5: Resume PDF Export ──
 
-// POST /api/resume/export -> Build a print-ready HTML resume from Mem0 milestones
+// POST /api/resume/export -> AI writes the ENTIRE resume from Mem0 data
 app.post('/api/resume/export', async (req, res) => {
-  const { userId = 'agent-zero-user', company = 'Target Company', jobTitle = 'Software Engineer' } = req.body;
+  const { userId = 'agent-zero-user', company = 'Target Company', jobTitle = 'Software Engineer', jobDescription = '', customInstructions = '', candidateName = '' } = req.body;
   const MEMORY_API = process.env.MEMORY_API_URL || 'http://localhost:3001';
 
+  // 1. Fetch memories from Mem0 — use BOTH search and getAll to ensure profile data isn't missed
   let memories = [];
   try {
+    // First: semantic search for career data
     const memRes = await fetch(`${MEMORY_API}/memory/retrieve`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: 'skills, projects, certifications, experiences, achievements', userId })
+      body: JSON.stringify({ query: 'skills, projects, certifications, experiences, achievements, education, profile, summary, name, email, bio', userId })
     });
     if (memRes.ok) {
       const memData = await memRes.json();
       memories = memData.results || memData.result || [];
     }
   } catch (err) {
-    console.warn('[ResumeExport] Mem0 unavailable, using defaults');
+    console.warn('[ResumeExport] Mem0 search unavailable');
   }
 
-  if (memories.length === 0) {
-    memories = [
-      { memory: 'Skills: React, Node.js, Next.js, TypeScript, Python, Docker, Supabase, pgvector, Git' },
-      { memory: 'Project: ResumeVault AI — Autonomous career command center with agentic job hunting, ATS scoring, and Mem0 stateful profile' },
-      { memory: 'Project: Supabase pgvector RAG pipeline with 3072-dimensional hybrid search (semantic + BM25 FTS)' },
-      { memory: 'Achievement: Built and deployed a multi-agent orchestration system using Groq, Gemini, and Claude in a containerized environment' },
-      { memory: 'Education: B.Tech Computer Science — Manipal Institute of Technology' }
-    ];
+  // Second: getAll to ensure we have the profile entry (Mem0 search often misses it)
+  try {
+    const { MemoryClient } = require('mem0ai');
+    const mem0 = new MemoryClient({ apiKey: process.env.MEM0_API_KEY });
+    let allMems = [];
+    try { const r = await mem0.getAll({ filters: { user_id: userId } }); allMems = r.results || r || []; }
+    catch { try { const r = await mem0.getAll({ user_id: userId }); allMems = r.results || r || []; } catch { } }
+    
+    // Merge: add any memories from getAll that aren't already in the search results
+    const existingIds = new Set(memories.map(m => m.id));
+    for (const m of allMems) {
+      if (!existingIds.has(m.id)) {
+        memories.push(m);
+      }
+    }
+    console.log(`[ResumeExport] Merged: ${memories.length} total memories (search + getAll)`);
+  } catch (err) {
+    console.warn('[ResumeExport] getAll fallback failed:', err.message);
   }
 
   const timelineItems = memories.map(item => item.memory || item.content || item.text || '').filter(Boolean);
 
-  // Parse sections
-  const skills = timelineItems.filter(t => /skill|react|node|python|typescript|docker|sql|git/i.test(t));
-  const projects = timelineItems.filter(t => /project:|built|developed|designed|implemented/i.test(t));
-  const achievements = timelineItems.filter(t => /achievement|award|scored|milestone/i.test(t));
-  const education = timelineItems.filter(t => /education|university|college|btech|degree|gpa/i.test(t));
-  const other = timelineItems.filter(t => !skills.includes(t) && !projects.includes(t) && !achievements.includes(t) && !education.includes(t));
+  // DEBUG: Log memory items to see what Mem0 actually returns
+  console.log(`[ResumeExport] Retrieved ${timelineItems.length} memory items. First 3:`);
+  timelineItems.slice(0, 3).forEach((t, i) => console.log(`  [${i}] ${t.substring(0, 200)}`));
+  const allMemText = timelineItems.join('\n');
+  
+  // Try to extract name from memory text using common patterns
+  let profileName = candidateName || 'Candidate';
+  let profileEmail = '';
+  let profileGithub = '';
+  let profileLocation = '';
+  let profileBio = '';
+  let profileCompany = '';
 
-  const html = `<!DOCTYPE html>
+  // Check for PROFILE: prefix format first (original format)
+  const profileMem = timelineItems.find(t => t.startsWith('PROFILE:')) || '';
+  if (profileMem) {
+    const extractField = (field) => { const m = profileMem.match(new RegExp(field + '=([^|]+)')); return m ? m[1].trim() : ''; };
+    profileName = extractField('name') || 'Candidate';
+    profileEmail = extractField('email') || '';
+    profileGithub = extractField('github') || '';
+    profileLocation = extractField('location') || '';
+    profileBio = extractField('bio') || '';
+    profileCompany = extractField('company') || '';
+  }
+
+  // Fallback: extract from natural language memories (Mem0 often rewrites the prefix away)
+  if (profileName === 'Candidate') {
+    // Try common patterns Mem0 uses when it rewrites PROFILE: entries
+    for (const item of timelineItems) {
+      const nameMatch = item.match(/(?:PROFILE|profile)\s+added\s+a\s+profile\s+entry\s+for\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/i)
+        || item.match(/profile\s+(?:entry\s+)?for\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/i)
+        || item.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)[''\u2019]s\s+profile/i)
+        || item.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\s+is\s+an?\s+experienced/i)
+        || item.match(/name\s+(?:is\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/i);
+      if (nameMatch) { profileName = nameMatch[1].trim(); break; }
+    }
+  }
+  if (!profileEmail) {
+    for (const item of timelineItems) {
+      const emailMatch = item.match(/email\s+([^\s,]+@[^\s,]+)/i) || item.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+      if (emailMatch) { profileEmail = emailMatch[1].trim(); break; }
+    }
+  }
+  if (!profileGithub) {
+    for (const item of timelineItems) {
+      const ghMatch = item.match(/github\.com\/([a-zA-Z0-9_-]+)/i) || item.match(/GitHub\s+(?:URL\s+)?(?:is\s+)?github\.com\/([a-zA-Z0-9_-]+)/i);
+      if (ghMatch) { profileGithub = `github.com/${ghMatch[1]}`; break; }
+    }
+  }
+  if (!profileLocation) {
+    for (const item of timelineItems) {
+      const locMatch = item.match(/location\s+(?:is\s+)?([A-Z][a-zA-Z\s,]+?)(?:\.|,|$)/i);
+      if (locMatch) { profileLocation = locMatch[1].trim(); break; }
+    }
+  }
+  if (!profileBio) {
+    for (const item of timelineItems) {
+      const bioMatch = item.match(/(?:bio|describes?\s+(?:her|him|them)\s+as)\s+(?:stating\s+)?(?:she|he|they\s+(?:is|are)\s+)?(?:an?\s+)?(.+?)(?:\.|$)/i);
+      if (bioMatch) { profileBio = bioMatch[1].trim(); break; }
+    }
+  }
+
+  console.log(`[ResumeExport] Extracted profile: name="${profileName}", email="${profileEmail}", github="${profileGithub}", location="${profileLocation}"`);
+
+  const contentItems = timelineItems;
+
+  // 3. Ask AI to write the ENTIRE resume as a complete HTML document
+  let fullResumeHtml = '';
+  let generatedJsonData = null;
+  try {
+    const profileData = {
+      name: profileName,
+      email: profileEmail,
+      github: profileGithub,
+      location: profileLocation,
+      bio: profileBio,
+      company: profileCompany,
+      careerData: contentItems
+    };
+    
+    console.log(`[ResumeExport] Generating resume via report-generator...`);
+    const genResult = await generateResume({ 
+      profileData, 
+      targetJob: `${jobTitle} at ${company}\n\nJob Description:\n${jobDescription}`,
+      customInstructions
+    });
+
+    if (genResult.success) {
+      fullResumeHtml = genResult.html;
+      generatedJsonData = genResult.jsonData;
+      console.log(`[ResumeExport] AI generated full resume for ${profileName} (${fullResumeHtml.length} chars)`);
+    } else {
+      throw new Error(genResult.error);
+    }
+  } catch (err) {
+    console.error('[ResumeExport] AI resume generation failed:', err.message);
+    // Fallback: basic HTML resume
+    fullResumeHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Resume — Shrey Sharma</title>
+  <title>Resume — ${profileName}</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
-    :root { --primary: #7c3aed; --text: #0f172a; --muted: #64748b; --border: #e2e8f0; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Inter', sans-serif; color: var(--text); background: #fff; padding: 48px 60px; line-height: 1.6; font-size: 13px; max-width: 800px; margin: 0 auto; }
-    header { border-bottom: 2px solid var(--primary); padding-bottom: 20px; margin-bottom: 24px; }
-    h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); }
-    .role { font-size: 14px; color: var(--primary); font-weight: 600; margin: 4px 0 8px; }
-    .contact { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); display: flex; gap: 20px; flex-wrap: wrap; }
-    h2 { font-size: 10px; font-family: 'Space Mono', monospace; text-transform: uppercase; letter-spacing: 2px; color: var(--primary); border-bottom: 1px solid var(--border); padding-bottom: 6px; margin: 20px 0 12px; }
-    .entry { margin-bottom: 12px; }
-    .entry-title { font-weight: 600; font-size: 13px; color: var(--text); }
-    .entry-sub { font-size: 11px; color: var(--muted); font-family: 'Space Mono', monospace; margin-bottom: 4px; }
-    .entry-desc { font-size: 12px; color: #334155; line-height: 1.5; }
-    .skills-grid { display: flex; flex-wrap: wrap; gap: 6px; }
-    .skill-tag { font-family: 'Space Mono', monospace; font-size: 10px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; padding: 3px 8px; color: var(--text); font-weight: 600; }
-    .ats-badge { display: inline-block; background: #dcfce7; border: 1px solid #bbf7d0; color: #15803d; font-family: 'Space Mono', monospace; font-size: 9px; padding: 2px 8px; border-radius: 4px; margin-left: 8px; font-weight: 700; vertical-align: middle; }
-    @media print {
-      body { padding: 0; }
-      .no-print { display: none !important; }
-    }
+    body { font-family: Arial, sans-serif; color: #000; background: #fff; padding: 40px 50px; line-height: 1.5; font-size: 11pt; max-width: 850px; margin: 0 auto; }
+    header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 16px; }
+    h1 { font-size: 22pt; text-transform: uppercase; }
+    .contact { font-size: 10pt; margin-top: 4px; }
+    h2 { font-size: 12pt; text-transform: uppercase; border-bottom: 1px solid #000; padding-bottom: 3px; margin: 14px 0 8px; }
+    ul { padding-left: 20px; margin: 4px 0 12px; }
+    li { margin-bottom: 3px; }
+    @media print { .no-print { display: none !important; } body { padding: 0; } }
   </style>
 </head>
 <body>
-  <div class="no-print" style="background:#7c3aed;color:#fff;padding:10px 16px;margin:-48px -60px 30px;font-family:'Space Mono',monospace;font-size:11px;display:flex;justify-content:space-between;align-items:center;">
-    <span>💎 ResumeVault AI — Generated Resume <span style="opacity:0.6">for ${company}</span></span>
-    <button onclick="window.print()" style="background:#fff;color:#7c3aed;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-family:inherit;font-weight:700;font-size:11px;">⬇ Print / Save as PDF</button>
+  <div class="no-print" style="background:#0f172a;color:#fff;padding:10px 20px;margin:-40px -50px 20px;font-size:12px;display:flex;justify-content:space-between;align-items:center;">
+    <span>📄 Resume for ${company}</span>
+    <button onclick="window.print()" style="background:#fff;color:#000;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-weight:bold;">Print / Save PDF</button>
   </div>
-
   <header>
-    <h1>Shrey Sharma <span class="ats-badge">ATS Optimized</span></h1>
-    <div class="role">${jobTitle} · AI Systems & Full-Stack Engineering</div>
-    <div class="contact">
-      <span>📧 shreyaskalasa18@gmail.com</span>
-      <span>🐙 github.com/shrey</span>
-      <span>🔗 linkedin.com/in/shrey</span>
-      <span>📍 India · Open to Relocation</span>
-    </div>
+    <h1>${profileName}</h1>
+    <div class="contact">${[profileEmail, profileGithub, profileLocation].filter(Boolean).join(' • ')}</div>
   </header>
-
-  ${skills.length > 0 ? `
-  <h2>Technical Skills</h2>
-  <div class="skills-grid">
-    ${skills.flatMap(s => s.replace(/^skills?:\s*/i,'').split(/[,;|]+/).map(t => t.trim()).filter(t => t.length > 1 && t.length < 30))
-      .map(skill => `<span class="skill-tag">${skill}</span>`).join('')}
-  </div>` : ''}
-
-  ${projects.length > 0 ? `
-  <h2>Projects</h2>
-  ${projects.map(p => {
-    const parts = p.split('—');
-    const title = parts[0].replace(/^project:\s*/i,'').trim();
-    const desc = parts.slice(1).join('—').trim();
-    return `<div class="entry">
-      <div class="entry-title">${title}</div>
-      ${desc ? `<div class="entry-desc">${desc}</div>` : ''}
-    </div>`;
-  }).join('')}` : ''}
-
-  ${achievements.length > 0 ? `
-  <h2>Achievements</h2>
-  ${achievements.map(a => `<div class="entry"><div class="entry-desc">• ${a.replace(/^achievement:\s*/i,'').trim()}</div></div>`).join('')}` : ''}
-
-  ${other.length > 0 ? `
-  <h2>Experience & Notes</h2>
-  ${other.map(o => `<div class="entry"><div class="entry-desc">• ${o}</div></div>`).join('')}` : ''}
-
-  ${education.length > 0 ? `
-  <h2>Education</h2>
-  ${education.map(e => `<div class="entry"><div class="entry-desc">${e.replace(/^education:\s*/i,'').trim()}</div></div>`).join('')}` : ''}
-
-  <h2>Generated By</h2>
-  <div class="entry-desc" style="font-size:10px;color:#94a3b8;font-family:'Space Mono',monospace;">
-    ResumeVault AI · Autonomous Career Command Center · Stateful profile from Mem0 · Optimized ${new Date().toLocaleDateString()}
-  </div>
+  ${profileBio ? `<p style="margin-bottom:14px;"><strong>${profileBio}</strong></p>` : ''}
+  <h2>Career Profile</h2>
+  <ul>
+    ${contentItems.map(item => `<li>${item.replace(/^\w+:\s*/, '')}</li>`).join('\n    ')}
+  </ul>
 </body>
 </html>`;
+  }
 
-  res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Content-Disposition', `attachment; filename="shrey_sharma_${company.toLowerCase().replace(/\s+/g,'-')}_resume.html"`);
-  res.send(html);
+  // 4. ATS Scoring (runs on the final HTML text)
+  let finalHtml = fullResumeHtml;
+  let atsScore = 0;
+  let atsData = null;
+
+  if (jobDescription && jobDescription.trim().length > 10) {
+    try {
+      const plainText = finalHtml.replace(/<[^>]+>/g, ' ').toLowerCase();
+      const jdText = jobDescription.toLowerCase();
+
+      const stopwords = new Set(['and','the','is','in','to','with','for','of','a','an','on','at','by','this','that','are','as','be','or','it','we','you','our','your','will','can','has','have','been','would','should','could','may','also','from','but','not','all','they','their','was','were','had','who','which','what','where','when','how','than','each','other','into','more','some','such','only','over','about','up','out','if','do','no','so','very','just','any','these','new','most','well']);
+      const tokenize = (text) => text.replace(/[^\w\s]/g, ' ').split(/\s+/).filter(w => w.length > 2 && !stopwords.has(w));
+
+      const resumeTokens = new Set(tokenize(plainText));
+      const jdKeywords = [...new Set(tokenize(jdText))];
+
+      const matched = jdKeywords.filter(kw => resumeTokens.has(kw));
+      const missing = jdKeywords.filter(kw => !resumeTokens.has(kw));
+
+      const score = jdKeywords.length > 0 ? Math.round((matched.length / jdKeywords.length) * 100) : 0;
+
+      atsData = {
+        score,
+        matched_count: matched.length,
+        missing_count: missing.length,
+        top_missing_keywords: missing.slice(0, 10),
+        status: score >= 75 ? 'PASS' : 'FAIL'
+      };
+      atsScore = score;
+    } catch (err) {
+      console.error('[ATS Parser] Error:', err);
+    }
+  }
+
+  const responsePayload = { html: finalHtml };
+  if (generatedJsonData) {
+    responsePayload.jsonData = generatedJsonData;
+  }
+  if (atsData) {
+    responsePayload.atsScore = Math.round(atsScore);
+    responsePayload.atsData = atsData;
+  }
+
+  res.json(responsePayload);
 });
 
-// ── A6: Live Application Status Tracker (Kanban Board) ──
+// ── A5: Export Full AI Resume via Mem0 Data ──
+
+// POST /api/resume/edit -> Update resume JSON state using LLM
+app.post('/api/resume/edit', async (req, res) => {
+  const { instructions, currentData } = req.body;
+  if (!instructions || !currentData) return res.status(400).json({ error: 'Missing instructions or currentData' });
+  
+  try {
+    const Groq = require('groq-sdk');
+    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+    
+    const prompt = `You are a world-class Executive Resume Writer.
+The user wants to make a specific edit to their resume.
+
+CURRENT RESUME JSON DATA:
+${JSON.stringify(currentData, null, 2)}
+
+USER INSTRUCTIONS:
+"${instructions}"
+
+Task: Apply the user's instructions to the CURRENT RESUME JSON DATA.
+Only modify the fields the user asked to change. Keep the rest exactly the same.
+Return ONLY the updated valid JSON object. Do not wrap in markdown or add explanations.
+
+The schema MUST exactly match the keys of the CURRENT RESUME JSON DATA.`;
+
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [{ role: 'user', content: prompt }],
+      model: 'llama-3.1-8b-instant',
+      temperature: 0.3,
+      response_format: { type: "json_object" }
+    });
+    
+    let contentStr = chatCompletion.choices[0]?.message?.content || '{}';
+    if (contentStr.startsWith('\`\`\`json')) {
+      contentStr = contentStr.replace(/^\`\`\`json/i, '').replace(/\`\`\`$/, '').trim();
+    }
+    const updatedData = JSON.parse(contentStr);
+    
+    res.json({ success: true, updatedData });
+  } catch (err) {
+    console.error('[ResumeEdit] Failed:', err);
+    res.status(500).json({ error: 'Failed to apply edits', message: err.message });
+  }
+});
+
 
 // In-memory Kanban store (falls back gracefully without Supabase)
 let applicationBoard = [
@@ -1431,10 +1802,6 @@ process.on('SIGTERM', async () => {
   process.exit(0);
 });
 
-const toolsApi = require('../server');
-const memoryApi = require('../memory/memory_api');
-app.use('/', toolsApi);
-app.use('/', memoryApi);
 
 // ── Start Server ──
 app.listen(PORT, () => {

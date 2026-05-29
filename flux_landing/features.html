@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Features — FLUX</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .page-header {
+      padding: 12rem 4vw 4rem;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .page-header h1 {
+      font-size: clamp(3.5rem, 7vw, 5.5rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      color: var(--color-charcoal);
+      margin-bottom: 1rem;
+    }
+    
+    .page-header p {
+      font-size: clamp(1.1rem, 2vw, 1.4rem);
+      max-width: 600px;
+      margin: 0 auto;
+      color: var(--color-slate);
+    }
+    
+    .bento-card p {
+      font-size: 1rem;
+      line-height: 1.6;
+      margin-top: 0.5rem;
+    }
+
+    /* Ensure architecture section content stacks above fixed canvas */
+    .architecture {
+      position: relative;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Custom Cursor -->
+  <div class="custom-cursor" id="customCursor"></div>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <a href="index.html" class="logo-container">
+      <div class="logo-icon">
+        <svg class="logo-svg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M8 26V6H24" stroke="var(--color-charcoal)" stroke-width="3.5" stroke-linecap="round" class="logo-p1"/>
+          <path d="M8 15H20" stroke="var(--color-charcoal)" stroke-width="3.5" stroke-linecap="round" class="logo-p2"/>
+          <circle cx="8" cy="6" r="3.5" fill="var(--color-mint)" class="logo-dot"/>
+        </svg>
+      </div>
+      <span class="logo-text">FLUX</span>
+    </a>
+    <div class="nav-links">
+      <a href="features.html" style="color: var(--color-charcoal); font-weight: 600;">Features</a>
+      <a href="how-it-works.html">How it Works</a>
+      <a href="#" class="magnetic-btn" id="navBtn"><span>Launch FLUX</span></a>
+    </div>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <h1>Every Layer, Built to Win.</h1>
+    <p>Eight production-grade systems working in parallel — from 3072-dim semantic search to headless Chromium auto-fill — each built to get you hired faster.</p>
+  </div>
+
+  <!-- Bento Grid -->
+  <section class="architecture" style="padding-top: 0;">
+    <div class="bento-grid">
+      
+      <!-- 1. Semantic RAG -->
+      <div class="bento-card span-8 tilt-card">
+        <div class="bento-content">
+          <div class="bento-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+          </div>
+          <h3>Supabase pgvector RAG</h3>
+          <p>Your resume is chunked and vectorized into 3072-dimensional embeddings via OpenAI. Every project, skill, and achievement is stored as a semantic coordinate in Supabase pgvector. When jobs drop, RRF Hybrid Search runs a simultaneous full-text + semantic scan — ranking matches in milliseconds, not keywords.</p>
+          
+          <!-- Live RAG Visualization Widget -->
+          <div class="rag-visualization">
+            <div class="rag-grid"></div>
+            <!-- Primary Node (User Resume) -->
+            <div class="rag-node primary" style="top: 50%; left: 30%;"></div>
+            <!-- Target Match Node 1 (Stripe) -->
+            <div class="rag-node match" style="top: 25%; left: 70%;"></div>
+            <div class="rag-connection" style="top: 52%; left: 32%; width: 38%; transform: rotate(-20deg);"></div>
+            <span style="position: absolute; top: 15%; left: 60%; color: #9ece6a; font-size: 0.7rem; font-family: monospace; font-weight: bold; background: #0b0c0d; padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); z-index: 10;">Stripe Software Engineer (98% Match)</span>
+            
+            <!-- Target Match Node 2 (Linear) -->
+            <div class="rag-node match" style="top: 70%; left: 65%;"></div>
+            <div class="rag-connection" style="top: 52%; left: 32%; width: 34%; transform: rotate(18deg);"></div>
+            <span style="position: absolute; top: 78%; left: 55%; color: #9ece6a; font-size: 0.7rem; font-family: monospace; font-weight: bold; background: #0b0c0d; padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); z-index: 10;">Linear Core Developer (95% Match)</span>
+            
+            <!-- Other minor nodes -->
+            <div class="rag-node" style="top: 20%; left: 15%;"></div>
+            <div class="rag-node" style="top: 80%; left: 20%;"></div>
+            <div class="rag-node" style="top: 15%; left: 45%;"></div>
+            <div class="rag-node" style="top: 85%; left: 48%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Browser Autonomy -->
+      <div class="bento-card span-4 tilt-card">
+        <div class="bento-content">
+          <div class="bento-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+          </div>
+          <h3>Browser-Use Autonomy</h3>
+          <p>The Python browser-use agent mounts your live Chrome user profile, opens Greenhouse, Lever, or Naukri natively, then uses LLM vision to parse every dynamic form field. Multi-page ATS forms are filled end-to-end without a single static API call — indistinguishable from a real human applicant.</p>
+          
+          <!-- Terminal Logs Visualizer -->
+          <div class="widget-terminal">
+            <div class="terminal-header">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+              <span class="terminal-title">python3 browser_agent.py</span>
+            </div>
+            <div class="terminal-body" style="font-size: 0.75rem;">
+              <div class="terminal-line"><span class="terminal-info">[INFO]</span> Launching Chromium Headless browser...</div>
+              <div class="terminal-line"><span class="terminal-info">[INFO]</span> Connected to Chrome profile 2.</div>
+              <div class="terminal-line"><span class="terminal-info">[INFO]</span> Navigating to Greenhouse...</div>
+              <div class="terminal-line"><span class="terminal-success">[SUCCESS]</span> Form auto-fill complete.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Voice Feedback -->
+      <div class="bento-card span-4 tilt-card">
+        <div class="bento-content">
+          <div class="bento-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+          </div>
+          <h3>ElevenLabs TTS Voice</h3>
+          <p>The second a recruiter opens your application or changes your status, FLUX fires an ElevenLabs synthesis request and delivers a natural, conversational voice memo directly to your device. You hear what's happening before you even open your dashboard.</p>
+          
+          <!-- Custom Audio Player Widget -->
+          <div class="audio-player-widget">
+            <div class="audio-play-btn" onclick="alert('Synthesizing recruiter intel memo...');">
+              <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M11.596 8.697l-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>
+            </div>
+            <div class="audio-wave">
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+            </div>
+          </div>
+          <p style="font-size: 0.75rem; font-style: italic; color: var(--color-slate); margin-top: 0.8rem;">"Recruiter at Stripe viewed your resume..."</p>
+        </div>
+      </div>
+
+      <!-- 4. WhatsApp Webhooks -->
+      <div class="bento-card span-8 tilt-card">
+        <div class="bento-content">
+          <div class="bento-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+          </div>
+          <h3>Twilio WhatsApp Alerts</h3>
+          <p>Every agent event — match found, application queued, form submitted, CAPTCHA detected — fires a Twilio WhatsApp webhook to your phone. No dashboard refresh. No email thread. Just instant, contextual updates exactly when you need them.</p>
+          
+          <!-- WhatsApp Mockup Visualizer -->
+          <div class="whatsapp-mockup">
+            <div class="whatsapp-header">
+              <div class="whatsapp-avatar">RZ</div>
+              <div class="whatsapp-status">
+                <h4>FLUX Agent Zero</h4>
+                <span>Active Agent Loop</span>
+              </div>
+            </div>
+            <div class="whatsapp-body">
+              <div class="message-bubble">
+                🚀 <strong>Agent Zero matched!</strong> Semantic fit found for: <em>Stripe Software Engineer</em>. Match rate: 98%.
+                <span class="message-time">10:42 AM</span>
+              </div>
+              <div class="message-bubble">
+                🌐 Headless Chromium launched. Commencing auto-fill form filling...
+                <span class="message-time">10:43 AM</span>
+              </div>
+              <div class="message-bubble sent">
+                Solve CAPTCHA to complete Stripe submission...
+                <span class="message-time">10:44 AM</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Copilot UI -->
+      <div class="bento-card span-6 tilt-card">
+        <div class="bento-content">
+          <div class="bento-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"></path></svg>
+          </div>
+          <h3>CopilotKit Conversational Chat</h3>
+          <p>Speak directly to your orchestrator. Ask it to filter out on-site roles, set a minimum salary threshold, or reprioritize your target stack. The multi-agent pipeline refines its queue in real-time — no settings page, no manual filters, just conversation.</p>
+          
+          <!-- CopilotKit UI Widget -->
+          <div class="copilot-chat-mockup">
+            <div class="copilot-header">
+              <span class="copilot-icon"></span>
+              <h4>Orchestrator Assistant</h4>
+            </div>
+            <div class="copilot-body">
+              <div class="chat-bubble user">
+                Filter for remote roles only and jobs above $120k.
+              </div>
+              <div class="chat-bubble">
+                Understood. Deduplicating target matches... 4 on-site positions filtered out. Funnel list updated successfully.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. Career Cockpit -->
+      <div class="bento-card span-6 tilt-card">
+        <div class="bento-content">
+          <div class="bento-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+          </div>
+          <h3>Career Cockpit Tracker</h3>
+          <p>Every application lives in a live Kanban board — Found, Applying, Submitted. Cards are powered by HTML5 native drag-and-drop. An animated SVG ATS score meter shows your semantic match rate in real-time as agents refine your resume to hit above 90%.</p>
+          
+          <!-- Draggable Kanban Board Mockup -->
+          <div style="background-color: #f7f5ee; border: 1px solid rgba(116, 119, 123, 0.15); border-radius: 16px; padding: 1.25rem; margin-top: 1.5rem; display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+              <div style="background: rgba(0,0,0,0.02); border-radius: 8px; padding: 6px; font-size: 0.7rem; font-weight: bold; color: var(--color-charcoal); border-bottom: 2px solid var(--color-slate);">Found (8)</div>
+              <div style="background: rgba(0,0,0,0.02); border-radius: 8px; padding: 6px; font-size: 0.7rem; font-weight: bold; color: var(--color-charcoal); border-bottom: 2px solid var(--color-mint);">Applying (1)</div>
+              <div style="background: rgba(0,0,0,0.02); border-radius: 8px; padding: 6px; font-size: 0.7rem; font-weight: bold; color: var(--color-charcoal); border-bottom: 2px solid rgba(0,0,0,0.15);">Submitted (49)</div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: left;">
+              <div>
+                <div style="background:#fff; border:1px solid rgba(0,0,0,0.08); padding:6px; border-radius:6px; font-size:0.65rem; font-weight:600; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">Linear</div>
+              </div>
+              <div>
+                <div style="background:#fff; border:1px solid var(--color-mint); padding:6px; border-radius:6px; font-size:0.65rem; font-weight:600; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">OpenAI</div>
+              </div>
+              <div>
+                <div style="background:#fff; border:1px solid rgba(0,0,0,0.08); padding:6px; border-radius:6px; font-size:0.65rem; font-weight:600; opacity:0.7;">Vercel</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7. Token-Bucket Rate Limiter -->
+      <div class="bento-card span-4 tilt-card">
+        <div class="bento-content">
+          <div class="bento-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+          </div>
+          <h3>Token-Bucket Rate Limiting</h3>
+          <p>Mathematically governed application pacing. A token-bucket algorithm caps all tool executions at 50 burst requests, refilling 1 token every 2 seconds. Your account is never flagged, never suspended. The system applies at full speed within safe operating thresholds.</p>
+          
+          <!-- Speed Gauge Mockup -->
+          <div style="background-color: #141517; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 1.25rem; margin-top: 1.5rem; text-align: left; font-family: monospace; font-size: 0.8rem; color: #fff;">
+            <div style="color:var(--color-slate); font-weight:bold; font-size:0.65rem; margin-bottom:8px;">RATE LIMIT METRICS</div>
+            <div>• Current Tokens: <span style="color:#9ece6a; font-weight:bold;">48 / 50</span></div>
+            <div style="margin-top:6px; height:6px; background:#1c1d1f; border-radius:3px; overflow:hidden;">
+              <div style="width:96%; height:100%; background:#9ece6a;"></div>
+            </div>
+            <div style="color:var(--color-slate); font-size:0.65rem; margin-top:8px;">• Refill: 1 token / 2 seconds</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 8. Resilient Pauses -->
+      <div class="bento-card span-8 tilt-card">
+        <div class="bento-content">
+          <div class="bento-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+          </div>
+          <h3>Human-in-the-Loop Resilient Pauses</h3>
+          <p>When the browser agent detects a CAPTCHA or 2FA gate, it emits a <code>HUMAN_INTERVENTION_REQUIRED</code> event, gracefully freezes the execution queue, and fires a WhatsApp alert with a deep link. You solve it in the open browser window. The agent resumes from exactly where it left off — full state preserved.</p>
+          
+          <!-- Warning CAPTCHA Alert Widget -->
+          <div class="warning-alert-box" style="margin-top: 1.5rem;">
+            <div class="warning-header">
+              <span class="warning-indicator"></span>
+              <span class="warning-title">INTERVENTION REQUIRED</span>
+            </div>
+            <div class="warning-body">
+              <strong>Greenhouse ATS CAPTCHA</strong> detected during Stripe application session. Pipeline paused safely.
+            </div>
+            <a href="#" class="warning-btn" onclick="alert('CAPTCHA bypass simulation complete!'); return false;">Solve & Resume</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Final CTA -->
+  <section class="cta-section">
+    <spline-viewer url="https://prod.spline.design/nOUBHkeBuytkOast/scene.splinecode" class="cta-spline"></spline-viewer>
+    <div class="cta-header-wrapper">
+      <h2>Every system. One goal.</h2>
+      <p>Get you hired. Faster than you can apply manually. Start FLUX and let the agents work.</p>
+    </div>
+    <div class="cta-btn-wrapper">
+      <a href="#" class="magnetic-btn light" id="ctaBtn"><span>Launch FLUX</span></a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-logo">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="logo-icon" style="width: 24px; height: 24px; margin-right: 0;">
+          <svg class="logo-svg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 26V6H24" stroke="var(--color-white)" stroke-width="3.5" stroke-linecap="round" class="logo-p1"/>
+            <path d="M8 15H20" stroke="var(--color-white)" stroke-width="3.5" stroke-linecap="round" class="logo-p2"/>
+            <circle cx="8" cy="6" r="3.5" fill="var(--color-mint)" class="logo-dot"/>
+          </svg>
+        </div>
+        <span style="color: var(--color-white); font-weight: 800; font-size: 1.2rem; letter-spacing: -0.04em;">FLUX</span>
+      </div>
+    </div>
+    <div>Production Build v2.0</div>
+  </footer>
+
+  <!-- Scripts -->
+  <script type="module" src="https://unpkg.com/@splinetool/viewer/build/spline-viewer.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

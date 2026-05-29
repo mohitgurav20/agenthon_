@@ -85,7 +85,7 @@ Use bold text, bullet points, and elegant markdown spacing. Do not include any m
         if (isOnline) {
             console.log("Synthesizing premium cheat-sheet content using Google Gemini Pro...");
             const genAI = new GoogleGenerativeAI(apiKey);
-            const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+            const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
             
             const response = await model.generateContent({
                 contents: [{ role: 'user', parts: [{ text: systemPrompt + "\n\n" + userPrompt }] }]

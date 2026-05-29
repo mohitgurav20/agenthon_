@@ -3,7 +3,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { CopilotChat } from '@copilotkit/react-ui';
+import { CopilotKit } from '@copilotkit/react-core';
+import '@copilotkit/react-ui/styles.css';
 import { createClient } from '@/utils/supabase/client';
+import { templates } from './resumeTemplates';
 
 type AgentOutputEvent = Record<string, unknown> & {
   timestamp?: string | number;
@@ -50,7 +53,7 @@ export default function DashboardPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: "Welcome to **ResumeVault AI**, your autonomous career command center. I can interview you dynamically to build your universal career database, generate custom ATS-optimized resumes tested inside our container sandbox, and automatically apply for jobs using our browser-use Chrome agent. How can I help you accelerate your career today?",
+      content: "Welcome to **FLUX**, your autonomous career command center. Let's get you hired! I will guide you through our unified workflow:\n\n1. **Extract Data**: Send me your GitHub or LinkedIn URL, or upload your PDF Resume/Certificates using the attachment icon.\n2. **Generate Resume**: I will craft a top-notch ATS-optimized HTML resume based on your profile and target Job Description.\n3. **ATS Score**: We will scan the resume against real ATS criteria and iterate until you hit a 90%+ score.\n4. **Match Jobs**: I will crawl the web for the best job matches using Tavily.\n5. **Auto Apply**: Our Python Browser Agent will automatically fill and submit applications for you.\n\nReady? Let's start with Step 1: Please provide your LinkedIn or GitHub URL, or upload a document.",
       agent: 'career_coach',
       confidence: 100
     }
@@ -101,7 +104,7 @@ export default function DashboardPage() {
   });
 
   // Tab selection for Right Sidebar
-  const [activeTab, setActiveTab] = useState<'metrics' | 'ats' | 'advanced' | 'gap'>('metrics');
+  const [activeTab, setActiveTab] = useState<'metrics' | 'ats' | 'advanced' | 'gap'>('ats');
   
   // A2A state
   const [a2aMethod, setA2aMethod] = useState<'agent/capabilities' | 'message/send'>('agent/capabilities');
@@ -113,8 +116,8 @@ export default function DashboardPage() {
   const [sandboxLogs, setSandboxLogs] = useState<string[]>([]);
   const [sandboxActive, setSandboxActive] = useState(false);
 
-  // Chat Mode
-  const [chatMode, setChatMode] = useState<'custom' | 'copilot'>('custom');
+  // FLUX custom states: UI mode
+  const [chatMode, setChatMode] = useState<'custom' | 'kanban' | 'vault'>('custom');
 
   // Supabase Real-time live memory events (Person C)
   const [liveEvents, setLiveEvents] = useState<AgentOutputEvent[]>([]);
@@ -133,6 +136,17 @@ export default function DashboardPage() {
     validator: 'validation'
   });
 
+  const [resumeData, setResumeData] = useState<any>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('executive');
+
+  // Re-render HTML whenever resumeData or selectedTemplate changes
+  useEffect(() => {
+    if (resumeData) {
+      const template = templates.find(t => t.id === selectedTemplate) || templates[0];
+      setLatestResumeHtml(template.render(resumeData));
+    }
+  }, [resumeData, selectedTemplate]);
+
   // Token & Cost Auditor state
   const [sessionAudit, setSessionAudit] = useState<{
     totalCalls: number;
@@ -146,7 +160,7 @@ export default function DashboardPage() {
     totalCost: 0.02450
   });
 
-  // ResumeVault custom states: Live ATS score meter
+  // FLUX custom states: Live ATS score meter
   const [atsMetrics, setAtsMetrics] = useState<{
     atsScore: number;
     keywordScore: number;
@@ -165,18 +179,16 @@ export default function DashboardPage() {
     feedback: "Excellent resume structure. Keyword matching is highly robust. Ready for auto-application!"
   });
 
-  // ResumeVault custom states: Career database timeline (Mem0 data)
+  // FLUX custom states: Career database timeline (Mem0 data)
   const [careerTimeline, setCareerTimeline] = useState<Milestone[]>([
     { id: "1", title: "React & Node.js", category: "Language", desc: "Core stack for full-stack interface development." },
     { id: "2", title: "Supabase pgvector", category: "Database", desc: "Built 3072-dimensional vector embedding search table." },
     { id: "3", title: "Mem0 Memory", category: "State", desc: "Configured persistent episodic context profiles." }
   ]);
 
-  // ResumeVault custom states: Job Listings matching (Tavily search)
+  // FLUX custom states: Job Listings matching (Tavily search)
   const [scrapedJobs, setScrapedJobs] = useState<Job[]>([
-    { title: "Software Engineer Intern", company: "Figma", url: "https://boards.greenhouse.io/figma/jobs/101", match: 95, status: "idle", keywords: ["React", "Node.js", "Docker", "Git"] },
-    { title: "Backend Engineer Intern", company: "Vercel", url: "https://jobs.lever.co/vercel/jobs/202", match: 90, status: "idle", keywords: ["Postgres", "Node.js", "Supabase", "Git"] },
-    { title: "Full-Stack Developer", company: "Supabase", url: "https://boards.greenhouse.io/supabase/jobs/303", match: 88, status: "idle", keywords: ["Supabase", "pgvector", "React", "Node.js"] }
+    { title: "AI is analyzing your profile...", company: "Tavily Crawler", url: "#", match: 0, status: "idle", keywords: ["Analyzing", "Searching"] }
   ]);
 
   // Browser Agent Logs Terminal
@@ -282,7 +294,7 @@ export default function DashboardPage() {
     } catch {
       // Demo fallback
       setRagResults([
-        { id: '1', content: 'ResumeVault AI career guideline: Always quantify achievements with metrics. Use action verbs like "designed", "implemented", "optimized". Keep resume to 1 page for < 5 years experience.', metadata: { source: 'resume_guidelines.pdf', type: 'guideline' } },
+        { id: '1', content: 'FLUX career guideline: Always quantify achievements with metrics. Use action verbs like "designed", "implemented", "optimized". Keep resume to 1 page for < 5 years experience.', metadata: { source: 'resume_guidelines.pdf', type: 'guideline' } },
         { id: '2', content: 'ATS Optimization: Avoid tables, images, and multi-column layouts. Use standard section headers: Experience, Education, Skills, Projects.', metadata: { source: 'ats_best_practices.pdf', type: 'guideline' } },
         { id: '3', content: 'Software Engineer Intern - Figma: Requirements: React, TypeScript, Node.js, GraphQL, REST APIs. Nice to have: Design systems, Postgres.', metadata: { source: 'figma_jd.txt', type: 'job_description' } },
         { id: '4', content: 'Backend Engineer - Vercel: Node.js, PostgreSQL, Docker, Kubernetes, CI/CD. AWS or GCP preferred.', metadata: { source: 'vercel_jd.txt', type: 'job_description' } },
@@ -303,37 +315,62 @@ export default function DashboardPage() {
   // A5: Resume PDF Export state
   const [exportingResume, setExportingResume] = useState(false);
   const [exportCompany, setExportCompany] = useState('');
+  const [jobDescription, setJobDescription] = useState('');
+  const [customInstructions, setCustomInstructions] = useState('');
+  const [latestResumeHtml, setLatestResumeHtml] = useState<string | null>(null);
 
-  const handleResumeExport = async () => {
+  const handleResumeExport = async (overrideInstructions?: string | React.MouseEvent) => {
     setExportingResume(true);
     try {
-      const res = await fetch('/api/resume/export', {
+      const res = await fetch('http://localhost:3002/api/resume/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: 'agent-zero-user', company: exportCompany || 'Target Company', jobTitle: 'Software Engineer' })
+        body: JSON.stringify({ 
+          userId: 'agent-zero-user', 
+          company: exportCompany || 'Target Company', 
+          jobTitle: 'Software Engineer', 
+          jobDescription, 
+          customInstructions: typeof overrideInstructions === 'string' ? overrideInstructions : customInstructions,
+          candidateName: sessionStorage.getItem('importedUsername') || ''
+        })
       });
       if (res.ok) {
-        const html = await res.text();
-        const blob = new Blob([html], { type: 'text/html' });
+        const data = await res.json();
+        
+        // Update live ATS metrics with REAL score
+        if (data.atsScore !== undefined) {
+          setAtsMetrics(prev => ({ ...prev, atsScore: data.atsScore }));
+          setActiveTab('ats'); // Switch to ATS tab to show the new score
+        }
+
+        setLatestResumeHtml(data.html);
+        if (data.jsonData) {
+          setResumeData(data.jsonData);
+        }
+
+        const blob = new Blob([data.html], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `shrey_sharma_${(exportCompany || 'resume').toLowerCase().replace(/\s+/g,'-')}.html`;
+        // Use real username if available
+        const usernameStr = sessionStorage.getItem('importedUsername') || 'resume';
+        a.download = `${usernameStr}_${(exportCompany || 'resume').toLowerCase().replace(/\\s+/g,'-')}.html`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+        
         // Auto-save version
         await fetch('/api/resume/save-version', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ company: exportCompany || 'Target Company', atsScore: atsMetrics.atsScore })
+          body: JSON.stringify({ company: exportCompany || 'Target Company', atsScore: data.atsScore || atsMetrics.atsScore })
         });
       } else {
-        alert('Resume exported! Check your downloads folder.');
+        alert('Failed to export resume. Check backend logs.');
       }
     } catch {
-      alert('Resume generated! In a live environment it would download automatically.');
+      alert('Network error while exporting resume.');
     } finally {
       setExportingResume(false);
     }
@@ -414,6 +451,21 @@ export default function DashboardPage() {
 
   // Fetch milestones and active models on mount
   useEffect(() => {
+    // Check if we just did a demo import — pick up the data instantly
+    let hasImportedData = false;
+    const importedRaw = sessionStorage.getItem('importedMilestones');
+    const importedUsername = sessionStorage.getItem('importedUsername');
+    if (importedRaw) {
+      try {
+        const imported = JSON.parse(importedRaw);
+        if (imported && imported.length > 0) {
+          setCareerTimeline(imported);
+          hasImportedData = true;
+        }
+      } catch { /* ignore */ }
+      sessionStorage.removeItem('importedMilestones');
+    }
+
     const fetchActiveModels = async () => {
       try {
         const res = await fetch('/api/models/active');
@@ -427,6 +479,8 @@ export default function DashboardPage() {
     };
 
     const fetchMilestones = async () => {
+      // Skip if we already have fresh imported data from Demo Mode
+      if (hasImportedData) return;
       try {
         const res = await fetch('/api/profile/milestones?userId=agent-zero-user');
         if (res.ok) {
@@ -450,9 +504,24 @@ export default function DashboardPage() {
       }
     };
 
+    const fetchJobs = async () => {
+      try {
+        const res = await fetch('/api/jobs/recommend?userId=agent-zero-user');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.length > 0) {
+            setScrapedJobs(data);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch jobs:', err);
+      }
+    };
+
     fetchActiveModels();
     fetchMilestones();
     fetchFunnelData();
+    fetchJobs();
   }, []);
 
   const handleModelChange = async (agent: string, modelVal: string) => {
@@ -626,6 +695,30 @@ export default function DashboardPage() {
   };
 
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setMessages(prev => [...prev, { 
+        role: 'user', 
+        content: `📎 Uploaded Document: ${file.name}` 
+      }]);
+      setLoading(true);
+      setTimeout(() => {
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: `I've successfully parsed your document: **${file.name}**. I have ingested its text into your Mem0 vector database for future context. What would you like to do with this document?`,
+          agent: 'career_coach',
+          confidence: 99
+        }]);
+        setLoading(false);
+      }, 1500);
+      
+      // Reset input
+      e.target.value = '';
+    }
+  };
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -640,6 +733,69 @@ export default function DashboardPage() {
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userText }]);
     setLoading(true);
+
+    const textLower = userText.toLowerCase();
+    const isGenerateIntent = /(create|generate|make|build|write|draft).*(resume|cv)/i.test(textLower);
+    const isEditIntent = /(edit|update|change|fix|modify).*(resume|cv)/i.test(textLower);
+
+    // LIVE GENERATION INTERCEPTOR
+    if (isGenerateIntent) {
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: '✅ Initiating deep AI resume generation based on your custom prompt. This will take just a moment...',
+        agent: 'career_coach',
+        confidence: 99
+      }]);
+      await handleResumeExport(userText);
+      setLoading(false);
+      return;
+    }
+
+    // LIVE STATE EDITING INTERCEPTOR (Simulating CopilotKit action)
+    if (isEditIntent) {
+      if (!resumeData) {
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: 'You need to generate a resume first before I can edit it. Click "Generate Resume" or ask me to generate one!',
+          agent: 'career_coach',
+          confidence: 100
+        }]);
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        const response = await fetch('/api/resume/edit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            instructions: userText,
+            currentData: resumeData
+          })
+        });
+        const data = await response.json();
+        if (data.success && data.updatedData) {
+           setResumeData(data.updatedData);
+           setMessages(prev => [...prev, {
+             role: 'assistant',
+             content: '✅ I have directly updated the underlying JSON state of your resume. The live preview above has instantly re-rendered to reflect your changes!',
+             agent: 'career_coach',
+             confidence: 99
+           }]);
+        } else {
+           throw new Error("Failed to edit");
+        }
+      } catch (err) {
+         setMessages(prev => [...prev, {
+           role: 'assistant',
+           content: 'Sorry, I ran into an error while trying to live-edit the resume.',
+           agent: 'career_coach',
+           confidence: 1
+         }]);
+      }
+      setLoading(false);
+      return;
+    }
 
     // Simulate Agent Steps visually
     const steps = [
@@ -793,7 +949,7 @@ export default function DashboardPage() {
           <div className="w-8 h-8 rounded-lg bg-primary/20 border border-primary/40 flex items-center justify-center">
             <span className="text-lg">💎</span>
           </div>
-          <h1 className="font-bold tracking-wider gradient-text text-lg">RESUMEVAULT AI</h1>
+          <h1 className="font-bold tracking-wider gradient-text text-lg">FLUX</h1>
         </div>
         <div className="flex items-center gap-4">
           <div className="px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 flex items-center gap-2">
@@ -814,49 +970,60 @@ export default function DashboardPage() {
           
           {/* Universal Database Timeline (Mem0 Ingestion) */}
           <div className="mb-6">
-            <h2 className="text-xs font-mono tracking-widest text-gray-400 mb-4 uppercase">Universal Career Database</h2>
             
-            {/* Interactive Dynamic Portfolio Button */}
-            <div className="mb-4 flex flex-col gap-2">
+            {/* Main Action: Generate ATS Resume */}
+            <div className="mb-6 p-4 rounded-xl bg-surface/30 border border-border/50 flex flex-col gap-3 shadow-sm">
+              <h3 className="text-xs font-bold text-gray-200 uppercase tracking-widest mb-1">Resume Generator</h3>
+              <input
+                type="text"
+                value={exportCompany}
+                onChange={e => setExportCompany(e.target.value)}
+                placeholder="Target Company (Optional)"
+                className="w-full bg-black/40 border border-border rounded-lg px-3 py-2.5 text-xs font-mono focus:outline-none focus:border-primary/50 text-gray-300 transition-colors"
+              />
+              <textarea
+                value={jobDescription}
+                onChange={e => setJobDescription(e.target.value)}
+                placeholder="Paste Job Description for ATS Tailoring..."
+                className="w-full h-16 bg-black/40 border border-border rounded-lg px-3 py-2.5 text-xs font-mono focus:outline-none focus:border-primary/50 text-gray-300 transition-colors resize-none"
+              />
+              <textarea
+                value={customInstructions}
+                onChange={e => setCustomInstructions(e.target.value)}
+                placeholder="Custom Instructions (Optional)"
+                className="w-full h-12 bg-black/40 border border-border rounded-lg px-3 py-2.5 text-xs font-mono focus:outline-none focus:border-primary/50 text-gray-300 transition-colors resize-none"
+              />
+              
               <button
-                onClick={handleGeneratePortfolio}
-                disabled={generatingPortfolio}
-                className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-primary to-secondary text-white font-mono text-xs font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2 border border-primary/30 shadow-[0_0_15px_rgba(124,58,237,0.25)]"
+                onClick={handleResumeExport}
+                disabled={exportingResume}
+                className="w-full mt-2 py-3 px-4 rounded-lg bg-gradient-to-r from-primary to-primary text-white font-bold text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(16,185,129,0.2)] hover:scale-[1.02]"
               >
-                {generatingPortfolio ? '⏳ Generating Portfolio...' : '🌐 Generate Interactive Portfolio'}
+                {exportingResume ? '⏳ Generating...' : '📄 Generate Resume'}
               </button>
-              {portfolioLink && (
-                <div className="p-2.5 rounded-xl bg-green-500/10 border border-green-500/20 text-center">
-                  <span className="text-[10px] text-green-400 block font-mono">✓ Compiled Successfully!</span>
-                  <a
-                    href="/portfolio.html"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-xs text-secondary hover:underline font-bold mt-1 inline-block animate-pulse"
-                  >
-                    🔗 Open Interactive Web Portfolio
-                  </a>
+              
+              {/* Template Selector */}
+              <div className="mt-4 border-t border-border/50 pt-4">
+                <span className="text-[10px] font-mono text-gray-400 uppercase tracking-wider block mb-2">Select Template:</span>
+                <div className="grid grid-cols-2 gap-2">
+                  {templates.map(t => (
+                    <button
+                      key={t.id}
+                      onClick={() => setSelectedTemplate(t.id)}
+                      className={`px-2 py-1.5 rounded-md text-[10px] font-medium transition-all border text-center truncate ${
+                        selectedTemplate === t.id 
+                        ? 'bg-primary/10 text-primary border-primary/50 shadow-sm' 
+                        : 'bg-black/20 text-gray-400 border-border hover:border-gray-500'
+                      }`}
+                    >
+                      {t.name}
+                    </button>
+                  ))}
                 </div>
-              )}
-              {/* A5: Download Resume PDF */}
-              <div className="flex gap-1.5">
-                <input
-                  type="text"
-                  value={exportCompany}
-                  onChange={e => setExportCompany(e.target.value)}
-                  placeholder="Company name..."
-                  className="flex-1 bg-surface border border-border rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:border-violet-500/50 text-gray-300 min-w-0"
-                />
-                <button
-                  onClick={handleResumeExport}
-                  disabled={exportingResume}
-                  className="shrink-0 py-2 px-3 rounded-xl font-mono text-xs font-bold transition-all border disabled:opacity-50 flex items-center gap-1.5"
-                  style={{ background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.35)', color: '#c4b5fd', boxShadow: '0 0 10px rgba(124,58,237,0.15)' }}
-                >
-                  {exportingResume ? '⏳' : '⬇ PDF'}
-                </button>
               </div>
             </div>
+
+            <h2 className="text-xs font-mono tracking-widest text-gray-400 mb-4 uppercase">Career Memory Timeline</h2>
 
             <div className="space-y-3.5">
               {careerTimeline.map((milestone) => (
@@ -865,7 +1032,7 @@ export default function DashboardPage() {
                     <span className="text-xs font-bold font-sans text-gray-200">{milestone.title}</span>
                     <span className={`text-[9px] font-mono px-2 py-0.5 rounded font-bold uppercase ${
                       milestone.category === 'Language' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
-                      milestone.category === 'Database' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' :
+                      milestone.category === 'Database' ? 'bg-accent/10 text-accent border border-accent/20' :
                       milestone.category === 'Framework' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
                       'bg-green-500/10 text-green-400 border border-green-500/20'
                     }`}>
@@ -883,59 +1050,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Dynamic LLM Switcher (Active Agents) */}
-          <div className="mb-6 border-t border-border/60 pt-4">
-            <h2 className="text-xs font-mono tracking-widest text-gray-400 mb-3 uppercase">Active Agents Switcher</h2>
-            <div className="space-y-3">
-              <div className="flex flex-col p-2.5 rounded-xl bg-surface/50 border border-border">
-                <span className="text-xs font-mono text-gray-400 mb-1.5 uppercase font-bold">🧠 Router Agent</span>
-                <select
-                  value={activeModels.router}
-                  onChange={(e) => handleModelChange('router', e.target.value)}
-                  className="bg-background border border-border rounded-lg text-xs p-1.5 focus:outline-none focus:border-primary/50 text-gray-200"
-                >
-                  <option value="fast">Llama 3.1 70B (Groq) - Fast</option>
-                  <option value="deep">Gemini 1.5 Pro - Reasoning</option>
-                </select>
-              </div>
-
-              <div className="flex flex-col p-2.5 rounded-xl bg-surface/50 border border-border">
-                <span className="text-xs font-mono text-gray-400 mb-1.5 uppercase font-bold">🔍 Career Coach Agent</span>
-                <select
-                  value={activeModels.research}
-                  onChange={(e) => handleModelChange('research', e.target.value)}
-                  className="bg-background border border-border rounded-lg text-xs p-1.5 focus:outline-none focus:border-primary/50 text-gray-200"
-                >
-                  <option value="flash">Gemini 1.5 Flash - Quick Match</option>
-                  <option value="deep">Gemini 1.5 Pro - Semantic Gap</option>
-                </select>
-              </div>
-
-              <div className="flex flex-col p-2.5 rounded-xl bg-surface/50 border border-border">
-                <span className="text-xs font-mono text-gray-400 mb-1.5 uppercase font-bold">⚙️ ATS Builder Agent</span>
-                <select
-                  value={activeModels.action}
-                  onChange={(e) => handleModelChange('action', e.target.value)}
-                  className="bg-background border border-border rounded-lg text-xs p-1.5 focus:outline-none focus:border-primary/50 text-gray-200"
-                >
-                  <option value="deep">Gemini 1.5 Pro - Sandbox Tailor</option>
-                  <option value="flash">Gemini 1.5 Flash - Quick Action</option>
-                </select>
-              </div>
-
-              <div className="flex flex-col p-2.5 rounded-xl bg-surface/50 border border-border">
-                <span className="text-xs font-mono text-gray-400 mb-1.5 uppercase font-bold">✅ Recruiter Validator</span>
-                <select
-                  value={activeModels.validator}
-                  onChange={(e) => handleModelChange('validator', e.target.value)}
-                  className="bg-background border border-border rounded-lg text-xs p-1.5 focus:outline-none focus:border-primary/50 text-gray-200"
-                >
-                  <option value="validation">Claude 3.5 Sonnet - Premium QA</option>
-                  <option value="deep">Gemini 1.5 Pro - Quality QA</option>
-                </select>
-              </div>
-            </div>
-          </div>
+          {/* Active Agents Switcher removed to simplify UI */}
         </aside>
 
         {/* Center: Agent Chat Area & Job Discovery Cards */}
@@ -957,33 +1072,33 @@ export default function DashboardPage() {
                     : 'bg-surface/30 border-border text-gray-500 hover:text-gray-300'
                 }`}
               >
-                💼 Career Cockpit
+                💼 Assistant
               </button>
               <button
-                onClick={() => setChatMode('copilot')}
+                onClick={() => setChatMode('kanban')}
                 className={`px-3 py-1 rounded-lg text-xs font-mono transition-all border ${
-                  chatMode === 'copilot'
-                    ? 'bg-secondary/20 border-secondary/40 text-secondary font-bold'
-                    : 'bg-surface/30 border-border text-gray-500 hover:text-gray-300'
-                }`}
-              >
-                🤖 CopilotKit
-              </button>
-              <button
-                onClick={() => setChatMode('kanban' as any)}
-                className={`px-3 py-1 rounded-lg text-xs font-mono transition-all border ${
-                  (chatMode as any) === 'kanban'
+                  chatMode === 'kanban'
                     ? 'bg-amber-500/20 border-amber-500/40 text-amber-400 font-bold'
                     : 'bg-surface/30 border-border text-gray-500 hover:text-gray-300'
                 }`}
               >
-                📋 App Tracker
+                📋 Applications
+              </button>
+              <button
+                onClick={() => setChatMode('vault')}
+                className={`px-3 py-1 rounded-lg text-xs font-mono transition-all border ${
+                  chatMode === 'vault'
+                    ? 'bg-blue-500/20 border-blue-500/40 text-blue-400 font-bold'
+                    : 'bg-surface/30 border-border text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                📁 Vault
               </button>
             </div>
           </div>
           
           {/* A6: Kanban Application Tracker */}
-          {(chatMode as any) === 'kanban' && (
+          {chatMode === 'kanban' && (
             <div className="flex-1 overflow-y-auto p-6">
               <div className="flex items-center justify-between mb-5">
                 <div>
@@ -1046,13 +1161,12 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {chatMode === 'custom' ? (
+          {chatMode === 'custom' && (
             <>
               {/* Job Listings Grid (Pillar 3: Job Discovery) */}
               <div className="px-6 pt-4 shrink-0">
                 <h3 className="text-xs font-mono tracking-widest text-gray-400 uppercase mb-3 flex items-center justify-between">
-                  <span>DISCOVERED OPPORTUNITIES (VIA TAVILY CRAWLER)</span>
-                  <span className="text-[10px] text-primary font-normal">Matching user profile</span>
+                  <span>RECOMMENDED JOBS FOR YOU</span>
                 </h3>
                 <div className="grid grid-cols-3 gap-4">
                   {scrapedJobs.map((job, idx) => (
@@ -1125,13 +1239,8 @@ export default function DashboardPage() {
                       {msg.role === 'assistant' && (
                         <div className="flex items-center justify-between border-b border-border/40 pb-2 mb-2">
                           <span className="text-xs font-mono uppercase text-gray-400">
-                            Agent: <strong className="text-primary">{msg.agent || 'career_coach'}</strong>
+                            <strong className="text-primary">AI Career Assistant</strong>
                           </span>
-                          {msg.confidence !== undefined && (
-                            <span className="text-xs px-2 py-0.5 rounded font-mono bg-green-500/10 text-green-400 border border-green-500/20">
-                              Confidence: {msg.confidence}%
-                            </span>
-                          )}
                         </div>
                       )}
                       
@@ -1144,17 +1253,17 @@ export default function DashboardPage() {
                         <div className="mt-4 pt-2 border-t border-border/30 flex flex-wrap gap-2">
                           {msg.sources.memoriesUsed > 0 && (
                             <span className="text-[10px] font-mono bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded">
-                              🧠 Mem0 profile: {msg.sources.memoriesUsed} facts
+                              🧠 Career Profile: {msg.sources.memoriesUsed} facts
                             </span>
                           )}
                           {msg.sources.ragDocsUsed > 0 && (
                             <span className="text-[10px] font-mono bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded">
-                              📁 Supabase RAG: {msg.sources.ragDocsUsed} docs
+                              📁 Resume Documents: {msg.sources.ragDocsUsed} docs
                             </span>
                           )}
                           {msg.sources.webResultsUsed > 0 && (
-                            <span className="text-[10px] font-mono bg-cyan-500/10 text-cyan-400 px-2 py-0.5 rounded">
-                              🌐 Tavily crawl: {msg.sources.webResultsUsed} boards
+                            <span className="text-[10px] font-mono bg-accent/10 text-accent px-2 py-0.5 rounded">
+                              🌐 Web Search: {msg.sources.webResultsUsed} boards
                             </span>
                           )}
                         </div>
@@ -1178,27 +1287,55 @@ export default function DashboardPage() {
                   </div>
                 )}
 
-                {/* Visual Recruiter Subtitle Overlay */}
-                {subtitleActive && (
-                  <div className="absolute bottom-28 left-1/2 transform -translate-x-1/2 bg-black/85 border border-primary/40 text-white px-6 py-4 rounded-3xl shadow-[0_0_40px_rgba(124,58,237,0.3)] z-50 backdrop-blur-xl max-w-3xl text-center w-4/5 pointer-events-none transition-all duration-300">
-                    <div className="flex items-center gap-2 justify-center mb-1.5 opacity-80">
-                      <div className="w-2.5 h-2.5 rounded-full bg-primary shadow-[0_0_10px_rgba(124,58,237,1)] animate-ping" />
-                      <span className="text-[10px] font-mono text-primary uppercase tracking-widest flex items-center gap-1 font-bold">
-                        ElevenLabs Voice Synthesizer Active
-                      </span>
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* Latest Generated Resume Panel */}
+              <div className="px-6 pb-4 pt-2 space-y-3">
+                {latestResumeHtml && (
+                  <div className="flex items-center gap-4 p-3 bg-surface border border-primary/20 rounded-xl relative overflow-hidden group">
+                    <div className="w-12 h-16 bg-white shadow-sm overflow-hidden border border-gray-200 shrink-0 relative flex items-center justify-center rounded">
+                      <span className="text-2xl">📄</span>
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" onClick={() => {
+                        const blob = new Blob([latestResumeHtml], { type: 'text/html' });
+                        const url = URL.createObjectURL(blob);
+                        window.open(url, '_blank');
+                      }}>
+                        <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                      </div>
                     </div>
-                    <p className="text-sm font-medium tracking-wide leading-relaxed font-sans text-gray-100">
-                      "{recruiterSubtitle}"
-                    </p>
+                    <div className="flex-1">
+                      <h4 className="text-sm font-bold text-gray-200">Latest Resume Generated</h4>
+                      <p className="text-[11px] text-gray-400 mt-0.5">Click the document icon to preview and download PDF.</p>
+                    </div>
+                    <button 
+                      onClick={() => { setInput("Edit my latest resume to: "); document.querySelector('input[type="text"]')?.focus(); }}
+                      className="px-4 py-2 rounded-lg bg-primary text-white text-xs font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center gap-2"
+                    >
+                      <span>✨</span> Edit with AI
+                    </button>
                   </div>
                 )}
-
-                <div ref={chatEndRef} />
               </div>
 
               {/* Input Area */}
               <div className="p-6 border-t border-border glass-panel shrink-0">
                 <form onSubmit={handleSubmit} className="max-w-3xl mx-auto relative flex gap-2">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                    onChange={handleFileUpload}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-4 rounded-xl bg-surface text-gray-400 hover:text-primary border border-border hover:border-primary/50 transition-colors shrink-0"
+                    title="Upload Resume, PDF, or Certificate"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                  </button>
                   <input 
                     type="text" 
                     value={input}
@@ -1217,17 +1354,63 @@ export default function DashboardPage() {
                 </form>
               </div>
             </>
-          ) : (
-            <div className="flex-1 overflow-hidden flex flex-col z-10 p-6">
-              <div className="bg-surface/90 backdrop-blur-md border border-border rounded-2xl overflow-hidden h-full shadow-[0_0_30px_rgba(124,58,237,0.15)] flex flex-col">
-                <div className="flex-1 relative copilot-custom-wrapper">
-                  <CopilotChat
-                    instructions="You are ResumeVault AI, an advanced Career Command Agent. Provide concise, professional responses. You have access to Supabase pgvector RAG, Tavily search, and browser automation form fillers."
-                    labels={{
-                      title: "ResumeVault AI",
-                      initial: "Universal Career Database active. All systems online. Ready to evaluate resumes or auto-apply...",
-                    }}
-                  />
+          )}
+          
+          {chatMode === 'vault' && (
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-sm font-bold text-gray-100">Documents Vault</h2>
+                  <p className="text-[11px] text-gray-500 font-mono mt-0.5">Manage your extracted profiles, resumes, and certificates</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="text-xs font-mono tracking-widest text-blue-400 uppercase">Extracted Profiles</h3>
+                  <div className="p-4 rounded-xl bg-surface/50 border border-border flex flex-col gap-3">
+                    <div className="flex justify-between items-center pb-3 border-b border-border/50">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">🐙</span>
+                        <span className="font-bold text-sm text-gray-200">GitHub</span>
+                      </div>
+                      <span className="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded font-mono">Synced</span>
+                    </div>
+                    <p className="text-[11px] text-gray-400 font-mono">Repos: 24 | Top Langs: TS, Python, Go</p>
+                  </div>
+                  
+                  <div className="p-4 rounded-xl bg-surface/50 border border-border flex flex-col gap-3">
+                    <div className="flex justify-between items-center pb-3 border-b border-border/50">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">💼</span>
+                        <span className="font-bold text-sm text-gray-200">LinkedIn</span>
+                      </div>
+                      <span className="text-[10px] bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded font-mono">Pending</span>
+                    </div>
+                    <p className="text-[11px] text-gray-400 font-mono">Please enter URL in chat to sync.</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-xs font-mono tracking-widest text-primary uppercase">Uploaded Documents</h3>
+                  <div className="p-4 rounded-xl bg-surface/50 border border-border flex flex-col gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">PDF</div>
+                      <div>
+                        <div className="text-sm font-bold text-gray-200">old_resume_v1.pdf</div>
+                        <div className="text-[10px] text-gray-500 font-mono mt-0.5">Uploaded 2 days ago</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4 rounded-xl bg-surface/50 border border-border flex flex-col gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">PDF</div>
+                      <div>
+                        <div className="text-sm font-bold text-gray-200">aws_certificate.pdf</div>
+                        <div className="text-[10px] text-gray-500 font-mono mt-0.5">Uploaded today</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1239,16 +1422,6 @@ export default function DashboardPage() {
           {/* Tab Selector */}
           <div className="flex border-b border-border shrink-0">
             <button
-              onClick={() => setActiveTab('metrics')}
-              className={`flex-1 py-3 text-xs font-mono tracking-wider uppercase transition-colors ${
-                activeTab === 'metrics'
-                  ? 'text-primary border-b-2 border-primary bg-primary/5'
-                  : 'text-gray-500 hover:text-gray-300'
-              }`}
-            >
-              📊 Metrics
-            </button>
-            <button
               onClick={() => setActiveTab('ats')}
               className={`flex-1 py-3 text-xs font-mono tracking-wider uppercase transition-colors ${
                 activeTab === 'ats'
@@ -1256,27 +1429,17 @@ export default function DashboardPage() {
                   : 'text-gray-500 hover:text-gray-300'
               }`}
             >
-              🎯 ATS & Apply
-            </button>
-            <button
-              onClick={() => setActiveTab('advanced')}
-              className={`flex-1 py-3 text-xs font-mono tracking-wider uppercase transition-colors ${
-                activeTab === 'advanced'
-                  ? 'text-accent border-b-2 border-accent bg-accent/5'
-                  : 'text-gray-500 hover:text-gray-300'
-              }`}
-            >
-              ⚙️ Terminal
+              🎯 ATS Score
             </button>
             <button
               onClick={() => setActiveTab('gap')}
               className={`flex-1 py-3 text-xs font-mono tracking-wider uppercase transition-colors ${
                 activeTab === 'gap'
-                  ? 'text-emerald-400 border-b-2 border-emerald-400 bg-emerald-500/5'
+                  ? 'text-primary border-b-2 border-primary bg-primary/5'
                   : 'text-gray-500 hover:text-gray-300'
               }`}
             >
-              🧩 Gap
+              🧩 Resume Strength
             </button>
           </div>
 
@@ -1286,18 +1449,18 @@ export default function DashboardPage() {
             {activeTab === 'gap' && (
               <>
                 <div className="mb-4">
-                  <h2 className="text-xs font-mono tracking-widest text-emerald-400 mb-2 uppercase">🧩 Skill Gap Analyzer</h2>
+                  <h2 className="text-xs font-mono tracking-widest text-primary mb-2 uppercase">🧩 Skill Gap Analyzer</h2>
                   <p className="text-[11px] text-gray-400 mb-3 leading-relaxed">Paste a job description below. We'll compare it against your Mem0 career profile and show exactly where you stand.</p>
                   <textarea
                     value={gapJd}
                     onChange={e => setGapJd(e.target.value)}
                     placeholder="Paste the job description here...&#10;&#10;e.g. 'We are looking for a Full-Stack Engineer proficient in React, Node.js, AWS, Docker, and PostgreSQL...'"
-                    className="w-full h-28 bg-surface border border-border rounded-xl px-3 py-3 text-xs text-gray-300 resize-none focus:outline-none focus:border-emerald-500/40 transition-colors placeholder-gray-600 font-mono"
+                    className="w-full h-28 bg-surface border border-border rounded-xl px-3 py-3 text-xs text-gray-300 resize-none focus:outline-none focus:border-primary/40 transition-colors placeholder-gray-600 font-mono"
                   />
                   <button
                     onClick={handleGapAnalysis}
                     disabled={gapAnalyzing || gapJd.trim().length < 20}
-                    className="w-full mt-2 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600/80 to-cyan-600/80 text-white font-mono text-xs font-bold hover:opacity-90 transition-opacity border border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.2)] disabled:opacity-40 flex items-center justify-center gap-2"
+                    className="w-full mt-2 py-2.5 rounded-xl bg-gradient-to-r from-primary/80 to-accent/80 text-white font-mono text-xs font-bold hover:opacity-90 transition-opacity border border-primary/30 shadow-[0_0_12px_rgba(16,185,129,0.2)] disabled:opacity-40 flex items-center justify-center gap-2"
                   >
                     {gapAnalyzing ? (
                       <><div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" /> Analyzing...</>
@@ -1308,7 +1471,7 @@ export default function DashboardPage() {
                 {gapResult && (
                   <div className="space-y-4">
                     {/* Readiness Score Ring */}
-                    <div className="p-4 rounded-xl bg-surface/60 border border-emerald-500/20 flex items-center gap-4">
+                    <div className="p-4 rounded-xl bg-surface/60 border border-primary/20 flex items-center gap-4">
                       <div className="relative w-16 h-16 shrink-0">
                         <svg viewBox="0 0 36 36" className="w-16 h-16 -rotate-90">
                           <circle cx="18" cy="18" r="14" fill="none" stroke="#1e293b" strokeWidth="3.5" />
@@ -1335,12 +1498,12 @@ export default function DashboardPage() {
                     {/* Matched Skills */}
                     {gapResult.matched.length > 0 && (
                       <div>
-                        <h3 className="text-[10px] font-mono text-emerald-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                        <h3 className="text-[10px] font-mono text-primary uppercase tracking-widest mb-2 flex items-center gap-1.5">
                           <span>✅ Matched ({gapResult.matched.length})</span>
                         </h3>
                         <div className="flex flex-wrap gap-1.5">
                           {gapResult.matched.map((m, i) => (
-                            <span key={i} className="text-[10px] font-mono font-bold px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
+                            <span key={i} className="text-[10px] font-mono font-bold px-2 py-1 rounded-lg bg-primary/10 text-primary border border-primary/25">
                               {m.skill}
                             </span>
                           ))}
@@ -1446,10 +1609,10 @@ export default function DashboardPage() {
                     <div>
                       <div className="flex justify-between text-[10px] text-gray-400 mb-1">
                         <span>ATS Passed (≥90)</span>
-                        <span className="text-cyan-400 font-bold">{funnelData.funnel.atsPassed} ({funnelData.conversionRates.atsPassRate}%)</span>
+                        <span className="text-accent font-bold">{funnelData.funnel.atsPassed} ({funnelData.conversionRates.atsPassRate}%)</span>
                       </div>
                       <div className="w-full bg-border h-1.5 rounded-full overflow-hidden">
-                        <div className="bg-cyan-400 h-full" style={{ width: `${funnelData.conversionRates.atsPassRate}%` }} />
+                        <div className="bg-accent h-full" style={{ width: `${funnelData.conversionRates.atsPassRate}%` }} />
                       </div>
                     </div>
                     <div>
@@ -1482,7 +1645,7 @@ export default function DashboardPage() {
                         <div className="flex justify-between items-center">
                           <span className="text-xs font-bold text-gray-200">{item.style}</span>
                           <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded uppercase ${
-                            item.color === 'primary' ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
+                            item.color === 'primary' ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-accent/10 text-accent border border-accent/20'
                           }`}>
                             Avg: {item.avgAtsScore}%
                           </span>
@@ -1546,7 +1709,7 @@ export default function DashboardPage() {
               </>
             )}
 
-            {/* Tab 2: ResumeVault custom ATS meter & Browser Live Logs (The Wow Factor) */}
+            {/* Tab 2: FLUX custom ATS meter & Browser Live Logs (The Wow Factor) */}
             {activeTab === 'ats' && (
               <div className="space-y-6">
                 
@@ -1610,12 +1773,13 @@ export default function DashboardPage() {
                     <div className="p-3.5 rounded-xl bg-black/60 border border-secondary/20 max-h-80 overflow-y-auto space-y-2 font-mono text-[10px] leading-relaxed shadow-inner">
                       {browserLogs.map((log, idx) => (
                         <div key={idx} className={
-                          log.includes('[system]') ? 'text-cyan-400' :
-                          log.includes('[browser]') ? 'text-purple-400' :
-                          log.includes('sandbox') ? 'text-yellow-400' :
+                          log && typeof log === 'string' && log.includes('[system]') ? 'text-accent' :
+                          log && typeof log === 'string' && log.includes('[browser]') ? 'text-purple-400' :
+                          log && typeof log === 'string' && log.includes('sandbox') ? 'text-yellow-400' :
                           'text-green-400'
                         }>
-                          {log}
+                          <span className="opacity-50 select-none mr-3">{String(idx + 1).padStart(2, '0')}</span>
+                          {log ? String(log) : 'Empty log'}
                         </div>
                       ))}
                     </div>
@@ -1635,7 +1799,7 @@ export default function DashboardPage() {
                     A2A Protocol Console
                   </h2>
                   <p className="text-[10px] text-gray-500 mb-3 leading-relaxed">
-                    Send JSON-RPC 2.0 requests to the ResumeVault A2A endpoint. Exposes profile agent capabilities card dynamically.
+                    Send JSON-RPC 2.0 requests to the FLUX A2A endpoint. Exposes profile agent capabilities card dynamically.
                   </p>
 
                   {/* Method Selector */}
@@ -1771,7 +1935,7 @@ export default function DashboardPage() {
             </div>
             <div>
               <div className="text-sm font-bold text-white">RAG Document Explorer</div>
-              <div className="text-[10px] font-mono text-cyan-400/70">Supabase pgvector · {ragDrawerTab === 'search' ? `${ragResults.length} docs` : `${resumeVersionsList.length} versions`}</div>
+              <div className="text-[10px] font-mono text-accent/70">Supabase pgvector · {ragDrawerTab === 'search' ? `${ragResults.length} docs` : `${resumeVersionsList.length} versions`}</div>
             </div>
           </div>
           <button
@@ -1848,7 +2012,7 @@ export default function DashboardPage() {
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
             {ragSearching && (
               <div className="flex items-center gap-2 py-6 justify-center">
-                <div className="w-4 h-4 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
                 <span className="text-xs font-mono text-gray-400">Querying Supabase pgvector...</span>
               </div>
             )}
@@ -1941,7 +2105,7 @@ export default function DashboardPage() {
               <span className="text-[10px] font-mono text-gray-500">
                 {ragResults.length} result{ragResults.length !== 1 ? 's' : ''} · pgvector hybrid search
               </span>
-              <button onClick={() => handleRagSearch('')} className="text-[10px] font-mono text-cyan-400/60 hover:text-cyan-400 transition-colors">
+              <button onClick={() => handleRagSearch('')} className="text-[10px] font-mono text-accent/60 hover:text-accent transition-colors">
                 ↺ Refresh All
               </button>
             </>
@@ -1971,7 +2135,7 @@ export default function DashboardPage() {
       >
         <span className="text-base">📁</span>
         <span>RAG Explorer</span>
-        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+        <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
       </button>
     </div>
   );

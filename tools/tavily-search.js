@@ -17,6 +17,11 @@ const axios = require('axios');
 const TAVILY_API_URL = 'https://api.tavily.com/search';
 
 async function searchWeb(query, options = {}) {
+  if (typeof query === 'object' && query !== null && query.query) {
+    options = query;
+    query = query.query;
+  }
+
   const {
     maxResults = 5,
     searchDepth = 'basic', // 'basic' or 'advanced'

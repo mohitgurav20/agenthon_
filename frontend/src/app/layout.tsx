@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { CopilotKit } from "@copilotkit/react-core";
-import "@copilotkit/react-ui/styles.css";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Agent Zero",
-  description: "Next Generation AI Orchestration",
+  title: "FLUX",
+  description: "FLUX — AI Resume Builder & Job Hunter",
 };
 
 export default function RootLayout({
@@ -30,10 +28,9 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <CopilotKit runtimeUrl="/api/copilotkit">
-          {children}
-        </CopilotKit>
+        {children}
       </body>
     </html>
   );
 }
+

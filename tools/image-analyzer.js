@@ -21,7 +21,7 @@ async function analyzeImage(imagePath, question = 'Analyze this image in detail.
     }
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' }); // Vision requires specific model in some SDK versions
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' }); // Vision requires specific model in some SDK versions
 
     // Read image file and convert to base64
     const imageBuffer = fs.readFileSync(imagePath);
